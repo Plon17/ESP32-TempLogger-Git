@@ -3,9 +3,27 @@
 <head>
   <title>Remote Sensor Monitor</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    #loading {
+      text-align: center;
+      margin: 20px;
+    }
+    #error {
+      color: red;
+      margin: 20px;
+    }
+  </style>
 </head>
 <body>
   <h2>Remote Sensor Data from Google Sheets</h2>
+  <div id="loading">Loading data...</div>
+  <div id="error"></div>
   <canvas id="chart"></canvas>
 
   <script>
@@ -15,41 +33,99 @@
       data: {
         labels: [],
         datasets: [
-          { label: 'Temperature (°C)', data: [], borderColor: 'red', fill: false },
-          { label: 'Humidity (%)', data: [], borderColor: 'blue', fill: false }
+          { 
+            label: 'Temperature (°C)', 
+            data: [], 
+            borderColor: 'rgba(255, 99, 132, 1)',
+            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+            tension: 0.1,
+            fill: false 
+          },
+          { 
+            label: 'Humidity (%)', 
+            data: [], 
+            borderColor: 'rgba(54, 162, 235, 1)',
+            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+            tension: 0.1,
+            fill: false 
+          }
         ]
       },
-      options: {}
+      options: {
+        responsive: true,
+        scales: {
+          y: {
+            beginAtZero: false
+          }
+        }
+      }
     });
 
     async function fetchData() {
-      const url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS6P6hzIdOoBMMRfgCgFF7gQ9DWvhlsmXz2hxHx3mmJuYIlanN8QjWWYT1V34UXd9PJC-2qWbTiBriZ/pub?gid=0&single=true&output=csv';
-
-      const response = await fetch(url);
-      const dataText = await response.text();
-
-      const rows = dataText.split('\n').slice(1); // skip header
-      const times = [];
-      const temps = [];
-      const hums = [];
-
-      rows.forEach(row => {
-        const cols = row.split('\t');  // split by tab, not comma
-        if (cols.length >= 4) {
-            times.push(cols[0] + ' ' + cols[1]); // Date + Time
-            temps.push(parseFloat(cols[2]));
-            hums.push(parseFloat(cols[3]));
+      try {
+        const url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS6P6hzIdOoBMMRfgCgFF7gQ9DWvhlsmXz2hxHx3mmJuYIlanN8QjWWYT1V34UXd9PJC-2qWbTiBriZ/pub?gid=0&single=true&output=csv';
+        
+        // Add timestamp to URL to prevent caching
+        const timestamp = new Date().getTime();
+        const response = await fetch(`${url}&t=${timestamp}`);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
         }
+        
+        const dataText = await response.text();
+        const rows = dataText.split('\n').slice(1); // skip header
+        
+        const times = [];
+        const temps = [];
+        const hums = [];
+
+        rows.forEach(row => {
+          if (row.trim() === '') return; // skip empty rows
+          
+          // Try both comma and tab separation
+          const cols = row.includes(',') ? row.split(',') : row.split('\t');
+          
+          if (cols.length >= 4) {
+            try {
+              const dateTime = `${cols[0].trim()} ${cols[1].trim()}`;
+              const temp = parseFloat(cols[2].trim());
+              const hum = parseFloat(cols[3].trim());
+              
+              if (!isNaN(temp) && !isNaN(hum)) {
+                times.push(dateTime);
+                temps.push(temp);
+                hums.push(hum);
+              }
+            } catch (e) {
+              console.error('Error parsing row:', row, e);
+            }
+          }
         });
 
-      sensorChart.data.labels = times;
-      sensorChart.data.datasets[0].data = temps;
-      sensorChart.data.datasets[1].data = hums;
-      sensorChart.update();
+        if (times.length > 0) {
+          document.getElementById('loading').style.display = 'none';
+          document.getElementById('error').textContent = '';
+          
+          sensorChart.data.labels = times;
+          sensorChart.data.datasets[0].data = temps;
+          sensorChart.data.datasets[1].data = hums;
+          sensorChart.update();
+        } else {
+          document.getElementById('error').textContent = 'No valid data found in the sheet.';
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        document.getElementById('error').textContent = `Error loading data: ${error.message}`;
+        document.getElementById('loading').style.display = 'none';
+      }
     }
 
+    // Initial load
     fetchData();
-    setInterval(fetchData, 5000); // refresh every 5 seconds
+    
+    // Refresh every 30 seconds (reduced from 5s to be kinder to Google's servers)
+    setInterval(fetchData, 30000);
   </script>
 </body>
 </html>
