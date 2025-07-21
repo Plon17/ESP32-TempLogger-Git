@@ -1,0 +1,133 @@
+:root {
+  --primary-color: #2c7873;
+  --secondary-color: #6fb98f;
+  --accent-color: #004358;
+  --text-color: #333;
+  --light-bg: #f8f9fa;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: white;
+  color: var(--text-color);
+  line-height: 1.6;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid var(--secondary-color);
+}
+
+h2 {
+  color: var(--accent-color);
+  margin: 0;
+  font-size: 1.8rem;
+}
+
+.dashboard-container {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: 25px;
+  margin-bottom: 20px;
+}
+
+#loading {
+  text-align: center;
+  margin: 20px;
+  color: var(--primary-color);
+  font-style: italic;
+}
+
+#error {
+  color: #e74c3c;
+  margin: 20px;
+  padding: 10px;
+  background-color: #fdecea;
+  border-radius: 4px;
+  display: none;
+}
+
+.status-panel {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: var(--light-bg);
+  padding: 12px 20px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+}
+
+.indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-right: 8px;
+}
+
+.indicator.on {
+  background-color: #27ae60;
+  box-shadow: 0 0 8px #27ae60;
+}
+
+.indicator.off {
+  background-color: #95a5a6;
+}
+
+button {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+button:hover {
+  background-color: var(--accent-color);
+  transform: translateY(-2px);
+}
+
+.chart-container {
+  position: relative;
+  margin: auto;
+}
+
+canvas {
+  max-height: 400px;
+  width: 100% !important;
+}
+
+footer {
+  text-align: center;
+  margin-top: 30px;
+  color: #7f8c8d;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+  body {
+    padding: 15px;
+  }
+  
+  .dashboard-container {
+    padding: 15px;
+  }
+  
+  .status-panel {
+    flex-direction: column;
+    gap: 10px;
+  }
+}
