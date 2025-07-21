@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Live Climate Monitor</title>
+  <link rel="stylesheet" href="styles/main.css">
+  <link rel="stylesheet" href="styles/live.css">
+</head>
+<body>
+  <nav class="main-nav">...</nav>
+  
+  <div class="thermostat-container">
+    <div class="thermostat">
+      <div class="temperature-circle">
+        <div class="temp-value" id="currentTemp">--</div>
+        <div class="temp-label">°C</div>
+      </div>
+      <div class="thermostat-controls">
+        <div class="humidity-display">
+          <span class="humidity-value" id="currentHumidity">--</span>
+          <span class="humidity-label">% Humidity</span>
+        </div>
+        <div class="location-display" id="currentLocation">Lab 2</div>
+      </div>
+    </div>
+    
+    <div class="sensor-status">
+      <div class="status-card">
+        <h3>Sensor Status</h3>
+        <div class="status-indicator online"></div>
+        <span>Connected</span>
+      </div>
+      <div class="last-updated" id="lastSensorUpdate">
+        Last reading: Just now
+      </div>
+    </div>
+  </div>
+
+  <script src="js/main.js"></script>
+  <script src="js/live.js"></script>
+</body>
+</html>
