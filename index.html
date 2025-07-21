@@ -18,13 +18,16 @@
       color: red;
       margin: 20px;
     }
+    canvas {
+      max-height: 600px;
+    }
   </style>
 </head>
 <body>
   <h2>Remote Sensor Data from Google Sheets</h2>
   <div id="loading">Loading data...</div>
   <div id="error"></div>
-  <canvas id="chart"></canvas>
+  <canvas id="chart" height="400"></canvas>
 
   <script>
     const chartCtx = document.getElementById('chart').getContext('2d');
@@ -39,7 +42,8 @@
             borderColor: 'rgba(255, 99, 132, 1)',
             backgroundColor: 'rgba(255, 99, 132, 0.2)',
             tension: 0.1,
-            fill: false 
+            fill: false,
+            yAxisID: 'y' 
           },
           { 
             label: 'Humidity (%)', 
@@ -47,15 +51,44 @@
             borderColor: 'rgba(54, 162, 235, 1)',
             backgroundColor: 'rgba(54, 162, 235, 0.2)',
             tension: 0.1,
-            fill: false 
+            fill: false,
+            yAxisID: 'y1'
           }
         ]
       },
       options: {
         responsive: true,
+        interaction: {
+          mode: 'index',
+          intersect: false,
+        },
         scales: {
+          x: {
+            ticks: {
+              autoSkip: true,
+              maxTicksLimit: 20
+            }
+          },
           y: {
-            beginAtZero: false
+            type: 'linear',
+            display: true,
+            position: 'left',
+            title: {
+              display: true,
+              text: 'Temperature (°C)'
+            }
+          },
+          y1: {
+            type: 'linear',
+            display: true,
+            position: 'right',
+            title: {
+              display: true,
+              text: 'Humidity (%)'
+            },
+            grid: {
+              drawOnChartArea: false,
+            }
           }
         }
       }
@@ -74,26 +107,33 @@
         }
         
         const dataText = await response.text();
-        const rows = dataText.split('\n').slice(1); // skip header
+        const rows = dataText.split('\n').filter(row => row.trim() !== ''); // remove empty rows
+        
+        if (rows.length <= 1) {
+          throw new Error('No data rows found in the sheet');
+        }
+        
+        // Skip header row
+        const dataRows = rows.slice(1); 
         
         const times = [];
         const temps = [];
         const hums = [];
 
-        rows.forEach(row => {
-          if (row.trim() === '') return; // skip empty rows
-          
-          // Try both comma and tab separation
-          const cols = row.includes(',') ? row.split(',') : row.split('\t');
+        dataRows.forEach(row => {
+          // Proper CSV parsing that handles quoted fields
+          const cols = parseCSVRow(row);
           
           if (cols.length >= 4) {
             try {
-              const dateTime = `${cols[0].trim()} ${cols[1].trim()}`;
+              const dateStr = cols[0].trim();
+              const timeStr = cols[1].trim();
               const temp = parseFloat(cols[2].trim());
               const hum = parseFloat(cols[3].trim());
               
               if (!isNaN(temp) && !isNaN(hum)) {
-                times.push(dateTime);
+                // Combine date and time for display
+                times.push(`${dateStr} ${timeStr}`);
                 temps.push(temp);
                 hums.push(hum);
               }
@@ -121,11 +161,34 @@
       }
     }
 
+    // Helper function to properly parse CSV rows that might contain commas in fields
+    function parseCSVRow(row) {
+      const result = [];
+      let current = '';
+      let inQuotes = false;
+      
+      for (let i = 0; i < row.length; i++) {
+        const char = row[i];
+        
+        if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+          result.push(current);
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      
+      result.push(current);
+      return result;
+    }
+
     // Initial load
     fetchData();
     
-    // Refresh every 30 seconds (reduced from 5s to be kinder to Google's servers)
-    setInterval(fetchData, 5000);
+    // Refresh every 30 seconds
+    setInterval(fetchData, 30000);
   </script>
 </body>
 </html>
