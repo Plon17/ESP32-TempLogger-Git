@@ -18,18 +18,38 @@
       color: red;
       margin: 20px;
     }
+    #status {
+      color: green;
+      margin: 10px;
+      font-style: italic;
+    }
     canvas {
       max-height: 600px;
+    }
+    .controls {
+      margin: 20px 0;
+    }
+    button {
+      padding: 8px 15px;
+      margin-right: 10px;
     }
   </style>
 </head>
 <body>
   <h2>Remote Sensor Data from Google Sheets</h2>
-  <div id="loading">Loading data...</div>
+  <div class="controls">
+    <button id="refreshBtn">Refresh Now</button>
+    <span id="status">Last updated: Never</span>
+  </div>
+  <div id="loading">Loading initial data...</div>
   <div id="error"></div>
   <canvas id="chart" height="400"></canvas>
 
   <script>
+    // Configuration
+    const MAX_DATA_POINTS = 100; // Limit number of points to maintain performance
+    const REFRESH_INTERVAL = 5000; // 30 seconds
+    
     const chartCtx = document.getElementById('chart').getContext('2d');
     const sensorChart = new Chart(chartCtx, {
       type: 'line',
@@ -62,11 +82,19 @@
           mode: 'index',
           intersect: false,
         },
+        animation: {
+          duration: 500 // Smooth animation for updates
+        },
         scales: {
           x: {
             ticks: {
               autoSkip: true,
-              maxTicksLimit: 20
+              maxTicksLimit: 20,
+              callback: function(value) {
+                // Show only time portion for better readability
+                const fullDate = this.getLabelForValue(value);
+                return fullDate.split(' ')[1]; // Return only time
+              }
             }
           },
           y: {
@@ -76,6 +104,11 @@
             title: {
               display: true,
               text: 'Temperature (°C)'
+            },
+            min: function(context) {
+              // Auto-scale with 5% buffer
+              const min = Math.min(...context.chart.data.datasets[0].data);
+              return min - (min * 0.05);
             }
           },
           y1: {
@@ -88,11 +121,17 @@
             },
             grid: {
               drawOnChartArea: false,
-            }
+            },
+            min: 0,
+            max: 100
           }
         }
       }
     });
+
+    // Store the last timestamp we've seen to detect new data
+    let lastTimestamp = null;
+    let refreshIntervalId = null;
 
     async function fetchData() {
       try {
@@ -107,7 +146,7 @@
         }
         
         const dataText = await response.text();
-        const rows = dataText.split('\n').filter(row => row.trim() !== ''); // remove empty rows
+        const rows = dataText.split('\n').filter(row => row.trim() !== '');
         
         if (rows.length <= 1) {
           throw new Error('No data rows found in the sheet');
@@ -116,41 +155,63 @@
         // Skip header row
         const dataRows = rows.slice(1); 
         
-        const times = [];
-        const temps = [];
-        const hums = [];
+        const newTimes = [];
+        const newTemps = [];
+        const newHums = [];
+        let newDataFound = false;
 
-        dataRows.forEach(row => {
-          // Proper CSV parsing that handles quoted fields
+        // Process rows in reverse to get newest data first
+        for (let i = dataRows.length - 1; i >= 0; i--) {
+          const row = dataRows[i];
           const cols = parseCSVRow(row);
           
           if (cols.length >= 4) {
             try {
               const dateStr = cols[0].trim();
               const timeStr = cols[1].trim();
+              const fullTimestamp = `${dateStr} ${timeStr}`;
               const temp = parseFloat(cols[2].trim());
               const hum = parseFloat(cols[3].trim());
               
               if (!isNaN(temp) && !isNaN(hum)) {
-                // Combine date and time for display
-                times.push(`${dateStr} ${timeStr}`);
-                temps.push(temp);
-                hums.push(hum);
+                // Check if this is new data
+                if (!lastTimestamp || new Date(fullTimestamp) > new Date(lastTimestamp)) {
+                  newDataFound = true;
+                  lastTimestamp = fullTimestamp;
+                }
+                
+                // Add to arrays (will be reversed later)
+                newTimes.push(fullTimestamp);
+                newTemps.push(temp);
+                newHums.push(hum);
               }
             } catch (e) {
               console.error('Error parsing row:', row, e);
             }
           }
-        });
+          
+          // Stop if we have enough points
+          if (newTimes.length >= MAX_DATA_POINTS) break;
+        }
 
-        if (times.length > 0) {
+        // Reverse to maintain chronological order
+        newTimes.reverse();
+        newTemps.reverse();
+        newHums.reverse();
+
+        if (newTimes.length > 0) {
           document.getElementById('loading').style.display = 'none';
           document.getElementById('error').textContent = '';
           
-          sensorChart.data.labels = times;
-          sensorChart.data.datasets[0].data = temps;
-          sensorChart.data.datasets[1].data = hums;
+          sensorChart.data.labels = newTimes;
+          sensorChart.data.datasets[0].data = newTemps;
+          sensorChart.data.datasets[1].data = newHums;
           sensorChart.update();
+          
+          // Update status
+          const now = new Date();
+          document.getElementById('status').textContent = 
+            `Last updated: ${now.toLocaleTimeString()} | New data: ${newDataFound ? 'Yes' : 'No'}`;
         } else {
           document.getElementById('error').textContent = 'No valid data found in the sheet.';
         }
@@ -161,7 +222,6 @@
       }
     }
 
-    // Helper function to properly parse CSV rows that might contain commas in fields
     function parseCSVRow(row) {
       const result = [];
       let current = '';
@@ -184,11 +244,21 @@
       return result;
     }
 
+    // Manual refresh button
+    document.getElementById('refreshBtn').addEventListener('click', fetchData);
+
     // Initial load
     fetchData();
     
-    // Refresh every 30 seconds
-    setInterval(fetchData, 5000);
+    // Start auto-refresh
+    refreshIntervalId = setInterval(fetchData, REFRESH_INTERVAL);
+
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', () => {
+      if (refreshIntervalId) {
+        clearInterval(refreshIntervalId);
+      }
+    });
   </script>
 </body>
 </html>
