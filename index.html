@@ -1,11 +1,138 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Climate Sensor Dashboard</title>
-  <link rel="stylesheet" href="styles/style.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --primary-color: #2c7873;
+      --secondary-color: #6fb98f;
+      --accent-color: #004358;
+      --text-color: #333;
+      --light-bg: #f8f9fa;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: white;
+      color: var(--text-color);
+      line-height: 1.6;
+    }
+    
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid var(--secondary-color);
+    }
+    
+    h2 {
+      color: var(--accent-color);
+      margin: 0;
+      font-size: 1.8rem;
+    }
+    
+    .dashboard-container {
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      padding: 25px;
+      margin-bottom: 20px;
+    }
+    
+    #loading {
+      text-align: center;
+      margin: 20px;
+      color: var(--primary-color);
+      font-style: italic;
+    }
+    
+    #error {
+      color: #e74c3c;
+      margin: 20px;
+      padding: 10px;
+      background-color: #fdecea;
+      border-radius: 4px;
+      display: none;
+    }
+    
+    .status-panel {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: var(--light-bg);
+      padding: 12px 20px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+    }
+    
+    .status-indicator {
+      display: flex;
+      align-items: center;
+    }
+    
+    .indicator {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      margin-right: 8px;
+    }
+    
+    .indicator.on {
+      background-color: #27ae60;
+      box-shadow: 0 0 8px #27ae60;
+    }
+    
+    .indicator.off {
+      background-color: #95a5a6;
+    }
+    
+    button {
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+    
+    button:hover {
+      background-color: var(--accent-color);
+      transform: translateY(-2px);
+    }
+    
+    canvas {
+      max-height: 400px;
+      width: 100% !important;
+    }
+    
+    .chart-container {
+      position: relative;
+      margin: auto;
+    }
+    
+    footer {
+      text-align: center;
+      margin-top: 30px;
+      color: #7f8c8d;
+      font-size: 0.9rem;
+    }
+    
+    @media (max-width: 768px) {
+      body {
+        padding: 15px;
+      }
+      
+      .dashboard-container {
+        padding: 15px;
+      }
+    }
+  </style>
 </head>
 <body>
   <div class="dashboard-container">
@@ -36,6 +163,297 @@
     <p>Real-time climate monitoring system | Data updates every 5 seconds</p>
   </footer>
 
-  <script src="js/script.js"></script>
+  <script>
+    // Configuration
+    const MAX_DATA_POINTS = 10; // Show only 10 most recent readings
+    const REFRESH_INTERVAL = 5000; // 5 seconds
+    
+    const chartCtx = document.getElementById('chart').getContext('2d');
+    const sensorChart = new Chart(chartCtx, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [
+          { 
+            label: 'Temperature (°C)', 
+            data: [], 
+            borderColor: '#e74c3c',
+            backgroundColor: 'rgba(231, 76, 60, 0.1)',
+            borderWidth: 2,
+            tension: 0.2,
+            fill: true,
+            yAxisID: 'y' 
+          },
+          { 
+            label: 'Humidity (%)', 
+            data: [], 
+            borderColor: '#3498db',
+            backgroundColor: 'rgba(52, 152, 219, 0.1)',
+            borderWidth: 2,
+            tension: 0.2,
+            fill: true,
+            yAxisID: 'y1'
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          mode: 'index',
+          intersect: false,
+        },
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: {
+              boxWidth: 12,
+              padding: 20,
+              font: {
+                weight: 'bold'
+              }
+            }
+          },
+          tooltip: {
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            titleFont: {
+              size: 14,
+              weight: 'bold'
+            },
+            bodyFont: {
+              size: 12
+            },
+            padding: 12,
+            usePointStyle: true,
+            callbacks: {
+              label: function(context) {
+                let label = context.dataset.label || '';
+                if (label) {
+                  label += ': ';
+                }
+                if (context.parsed.y !== null) {
+                  label += context.parsed.y.toFixed(1);
+                  label += context.dataset.label.includes('Temperature') ? '°C' : '%';
+                }
+                return label;
+              }
+            }
+          }
+        },
+        animation: {
+          duration: 800
+        },
+        scales: {
+          x: {
+            grid: {
+              display: false
+            },
+            ticks: {
+              color: '#7f8c8d',
+              maxRotation: 0,
+              callback: function(value) {
+                const fullDate = this.getLabelForValue(value);
+                const [date, time] = fullDate.split(' ');
+                return time; // Show only time portion
+              }
+            }
+          },
+          y: {
+            type: 'linear',
+            display: true,
+            position: 'left',
+            title: {
+              display: true,
+              text: 'Temperature (°C)',
+              color: '#e74c3c',
+              font: {
+                weight: 'bold'
+              }
+            },
+            grid: {
+              color: 'rgba(0, 0, 0, 0.05)'
+            },
+            min: function(context) {
+              const min = Math.min(...context.chart.data.datasets[0].data);
+              return Math.floor(min) - 2;
+            },
+            max: function(context) {
+              const max = Math.max(...context.chart.data.datasets[0].data);
+              return Math.ceil(max) + 2;
+            }
+          },
+          y1: {
+            type: 'linear',
+            display: true,
+            position: 'right',
+            title: {
+              display: true,
+              text: 'Humidity (%)',
+              color: '#3498db',
+              font: {
+                weight: 'bold'
+              }
+            },
+            grid: {
+              drawOnChartArea: false,
+            },
+            min: 0,
+            max: 100,
+            ticks: {
+              callback: function(value) {
+                return value + '%';
+              }
+            }
+          }
+        }
+      }
+    });
+
+    // Store the last timestamp we've seen to detect new data
+    let lastTimestamp = null;
+    let refreshIntervalId = null;
+
+    async function fetchData() {
+      try {
+        const url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS6P6hzIdOoBMMRfgCgFF7gQ9DWvhlsmXz2hxHx3mmJuYIlanN8QjWWYT1V34UXd9PJC-2qWbTiBriZ/pub?gid=0&single=true&output=csv';
+        
+        // Add timestamp to URL to prevent caching
+        const timestamp = new Date().getTime();
+        const response = await fetch(`${url}&t=${timestamp}`);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const dataText = await response.text();
+        const rows = dataText.split('\n').filter(row => row.trim() !== '');
+        
+        if (rows.length <= 1) {
+          throw new Error('No data rows found in the sheet');
+        }
+        
+        // Skip header row
+        const dataRows = rows.slice(1); 
+        
+        const newTimes = [];
+        const newTemps = [];
+        const newHums = [];
+        let newDataFound = false;
+
+        // Process only the last 10 rows (most recent)
+        const startIdx = Math.max(0, dataRows.length - MAX_DATA_POINTS);
+        for (let i = dataRows.length - 1; i >= startIdx; i--) {
+          const row = dataRows[i];
+          const cols = parseCSVRow(row);
+          
+          if (cols.length >= 4) {
+            try {
+              const dateStr = cols[0].trim();
+              const timeStr = cols[1].trim();
+              const fullTimestamp = `${dateStr} ${timeStr}`;
+              const temp = parseFloat(cols[2].trim());
+              const hum = parseFloat(cols[3].trim());
+              
+              if (!isNaN(temp) && !isNaN(hum)) {
+                // Check if this is new data
+                if (!lastTimestamp || new Date(fullTimestamp) > new Date(lastTimestamp)) {
+                  newDataFound = true;
+                  lastTimestamp = fullTimestamp;
+                }
+                
+                // Add to arrays (will be reversed later)
+                newTimes.push(fullTimestamp);
+                newTemps.push(temp);
+                newHums.push(hum);
+              }
+            } catch (e) {
+              console.error('Error parsing row:', row, e);
+            }
+          }
+        }
+
+        // Reverse to maintain chronological order
+        newTimes.reverse();
+        newTemps.reverse();
+        newHums.reverse();
+
+        if (newTimes.length > 0) {
+          document.getElementById('loading').style.display = 'none';
+          document.getElementById('error').style.display = 'none';
+          
+          sensorChart.data.labels = newTimes;
+          sensorChart.data.datasets[0].data = newTemps;
+          sensorChart.data.datasets[1].data = newHums;
+          sensorChart.update();
+          
+          // Update status
+          const now = new Date();
+          document.getElementById('status').textContent = 
+            `Last updated: ${now.toLocaleTimeString()}`;
+            
+          // Update data status indicator
+          const indicator = document.getElementById('dataIndicator');
+          const dataStatus = document.getElementById('dataStatus');
+          if (newDataFound) {
+            indicator.className = 'indicator on';
+            dataStatus.textContent = 'Incoming Data: On';
+          } else {
+            indicator.className = 'indicator off';
+            dataStatus.textContent = 'Incoming Data: Off';
+          }
+        } else {
+          showError('No valid data found in the sheet.');
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        showError(`Error loading data: ${error.message}`);
+      }
+    }
+
+    function showError(message) {
+      const errorEl = document.getElementById('error');
+      errorEl.textContent = message;
+      errorEl.style.display = 'block';
+      document.getElementById('loading').style.display = 'none';
+    }
+
+    function parseCSVRow(row) {
+      const result = [];
+      let current = '';
+      let inQuotes = false;
+      
+      for (let i = 0; i < row.length; i++) {
+        const char = row[i];
+        
+        if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+          result.push(current);
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      
+      result.push(current);
+      return result;
+    }
+
+    // Manual refresh button
+    document.getElementById('refreshBtn').addEventListener('click', fetchData);
+
+    // Initial load
+    fetchData();
+    
+    // Start auto-refresh
+    refreshIntervalId = setInterval(fetchData, REFRESH_INTERVAL);
+
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', () => {
+      if (refreshIntervalId) {
+        clearInterval(refreshIntervalId);
+      }
+    });
+  </script>
 </body>
 </html>
