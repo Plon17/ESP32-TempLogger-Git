@@ -35,13 +35,13 @@
       const hums = [];
 
       rows.forEach(row => {
-        const cols = row.split(',');
+        const cols = row.split('\t');  // split by tab, not comma
         if (cols.length >= 4) {
-          times.push(cols[0] + ' ' + cols[1]); // Date + Time
-          temps.push(parseFloat(cols[2]));
-          hums.push(parseFloat(cols[3]));
+            times.push(cols[0] + ' ' + cols[1]); // Date + Time
+            temps.push(parseFloat(cols[2]));
+            hums.push(parseFloat(cols[3]));
         }
-      });
+        });
 
       sensorChart.data.labels = times;
       sensorChart.data.datasets[0].data = temps;
