@@ -6,6 +6,7 @@
   --light-bg: #f8f9fa;
 }
 
+/* ===== Base Styles ===== */
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   max-width: 900px;
@@ -16,6 +17,42 @@ body {
   line-height: 1.6;
 }
 
+/* ===== Navigation ===== */
+.main-nav {
+  background-color: var(--primary-color);
+  padding: 1rem;
+  margin-bottom: 2rem;
+  border-radius: 8px;
+}
+
+.main-nav ul {
+  display: flex;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  gap: 1.5rem;
+}
+
+.main-nav a {
+  color: white;
+  text-decoration: none;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.main-nav a:hover {
+  background-color: var(--accent-color);
+  transform: translateY(-2px);
+}
+
+.main-nav a.active {
+  background-color: var(--secondary-color);
+  font-weight: 600;
+}
+
+/* ===== Dashboard Structure ===== */
 header {
   text-align: center;
   margin-bottom: 20px;
@@ -37,22 +74,7 @@ h2 {
   margin-bottom: 20px;
 }
 
-#loading {
-  text-align: center;
-  margin: 20px;
-  color: var(--primary-color);
-  font-style: italic;
-}
-
-#error {
-  color: #e74c3c;
-  margin: 20px;
-  padding: 10px;
-  background-color: #fdecea;
-  border-radius: 4px;
-  display: none;
-}
-
+/* ===== Status Panel ===== */
 .status-panel {
   display: flex;
   justify-content: space-between;
@@ -61,37 +83,44 @@ h2 {
   padding: 12px 20px;
   border-radius: 6px;
   margin-bottom: 20px;
-  gap: 15px; /* Added gap between elements */
-}
-
-.status-indicator {
-  display: flex;
-  align-items: center;
-  gap: 8px; /* Space between elements */
+  gap: 15px;
 }
 
 .status-line {
   display: flex;
   align-items: center;
-  gap: 15px; /* Space between time and indicator */
+  gap: 15px;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .indicator {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  margin-right: 0; /* Removed margin since we're using gap */
 }
 
 .indicator.on {
   background-color: #27ae60;
   box-shadow: 0 0 8px #27ae60;
+  animation: pulse 2s infinite;
 }
 
 .indicator.off {
   background-color: #95a5a6;
 }
 
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(39, 174, 96, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(39, 174, 96, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(39, 174, 96, 0); }
+}
+
+/* ===== Buttons ===== */
 button {
   background-color: var(--primary-color);
   color: white;
@@ -108,26 +137,54 @@ button:hover {
   transform: translateY(-2px);
 }
 
+/* ===== Chart ===== */
 .chart-container {
   position: relative;
   margin: auto;
+  min-height: 400px;
 }
 
 canvas {
-  max-height: 400px;
   width: 100% !important;
+  height: 400px !important;
 }
 
+/* ===== Messages ===== */
+#loading {
+  text-align: center;
+  margin: 20px;
+  color: var(--primary-color);
+  font-style: italic;
+}
+
+#error {
+  color: #e74c3c;
+  margin: 20px;
+  padding: 10px;
+  background-color: #fdecea;
+  border-radius: 4px;
+  display: none;
+}
+
+/* ===== Footer ===== */
 footer {
   text-align: center;
   margin-top: 30px;
   color: #7f8c8d;
   font-size: 0.9rem;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
 }
 
+/* ===== Responsive Design ===== */
 @media (max-width: 768px) {
   body {
     padding: 15px;
+  }
+  
+  .main-nav ul {
+    flex-direction: column;
+    gap: 0.5rem;
   }
   
   .dashboard-container {
@@ -138,35 +195,18 @@ footer {
     flex-direction: column;
     gap: 10px;
   }
-}
-
-.main-nav {
-  background-color: var(--primary-color);
-  padding: 1rem;
-  margin-bottom: 2rem;
-}
-
-.main-nav ul {
-  display: flex;
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  gap: 1.5rem;
-}
-
-.main-nav a {
-  color: white;
-  text-decoration: none;
-  font-weight: 500;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  transition: background-color 0.3s;
-}
-
-.main-nav a:hover {
-  background-color: var(--accent-color);
-}
-
-.main-nav a.active {
-  background-color: var(--secondary-color);
+  
+  .status-line {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+  
+  .chart-container {
+    min-height: 300px;
+  }
+  
+  canvas {
+    height: 300px !important;
+  }
 }
