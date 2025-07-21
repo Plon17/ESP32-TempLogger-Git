@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Remote Sensor Monitor</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <h2>Remote Sensor Data from Google Sheets</h2>
+  <canvas id="chart"></canvas>
+
+  <script>
+    const chartCtx = document.getElementById('chart').getContext('2d');
+    const sensorChart = new Chart(chartCtx, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [
+          { label: 'Temperature (°C)', data: [], borderColor: 'red', fill: false },
+          { label: 'Humidity (%)', data: [], borderColor: 'blue', fill: false }
+        ]
+      },
+      options: {}
+    });
+
+    async function fetchData() {
+      // Replace this URL with your published CSV URL or JSON feed URL
+      const url = 'YOUR_PUBLISHED_GOOGLE_SHEET_CSV_URL';
+
+      const response = await fetch(url);
+      const dataText = await response.text();
+
+      const rows = dataText.split('\n').slice(1); // skip header
+      const times = [];
+      const temps = [];
+      const hums = [];
+
+      rows.forEach(row => {
+        const cols = row.split(',');
+        if (cols.length >= 4) {
+          times.push(cols[0] + ' ' + cols[1]); // Date + Time
+          temps.push(parseFloat(cols[2]));
+          hums.push(parseFloat(cols[3]));
+        }
+      });
+
+      sensorChart.data.labels = times;
+      sensorChart.data.datasets[0].data = temps;
+      sensorChart.data.datasets[1].data = hums;
+      sensorChart.update();
+    }
+
+    fetchData();
+    setInterval(fetchData, 5000); // refresh every 5 seconds
+  </script>
+</body>
+</html>
