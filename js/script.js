@@ -4,7 +4,7 @@ const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS6P6hzIdOoBM
 
 // DOM Elements
 const chartCtx = document.getElementById('chart').getContext('2d');
-const statusElement = document.getElementById('status');
+const statusElement = document.getElementById('status'); joint
 const dataIndicator = document.getElementById('dataIndicator');
 const dataStatusElement = document.getElementById('dataStatus');
 const loadingElement = document.getElementById('loading');
