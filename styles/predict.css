@@ -99,7 +99,7 @@ h2 {
 }
 
 .filter-panel {
-  display: none; /* Removed button, so hide this */
+  display: none;
 }
 
 .prediction-wrapper {

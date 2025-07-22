@@ -23,6 +23,7 @@ async function fetchData() {
     processData(rows.slice(1));
   } catch (error) {
     handleError(error);
+    console.error('Fetch Error:', error);
   }
 }
 
@@ -53,7 +54,11 @@ function processData(dataRows) {
     }
   }
   
-  generatePredictions();
+  if (allData.length > 0) {
+    generatePredictions();
+  } else {
+    handleError(new Error('No valid data processed'));
+  }
 }
 
 function parseCSVRow(row) {
@@ -130,7 +135,7 @@ function predictValues() {
     const predTemp = lastTemp + tempTrend * i;
     const predHum = lastHum + humTrend * i;
     predictions.push({
-      date: predDate.toISOString().split('T')[0],
+      date: predDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'numeric', day: 'numeric' }),
       temp: Math.max(0, predTemp),
       hum: Math.min(100, Math.max(0, predHum))
     });
@@ -198,7 +203,7 @@ function drawChart(predictions) {
   ctx.font = '12px Arial';
   dates.forEach((date, i) => {
     const x = (i + 1) * width;
-    ctx.fillText(date, x - 20, canvas.height - 5);
+    ctx.fillText(date.split(',')[1].trim(), x - 20, canvas.height - 5); // Show only date part under chart
   });
 }
 
