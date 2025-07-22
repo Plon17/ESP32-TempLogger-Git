@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Climate Data History</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-brand">Climate Monitor</div>
+    <ul class="nav-links">
+      <li><a href="index.html">Dashboard</a></li>
+      <li><a href="history.html" class="active">History</a></li>
+      <li><a href="live.html">Live Readings</a></li>
+      <li><a href="about.html">About</a></li>
+    </ul>
+  </nav>
+
+  <div class="dashboard-container">
+    <header>
+      <h2>Climate Data History</h2>
+    </header>
+    
+    <div class="filter-container">
+      <label for="dateFilter">Filter by Date:</label>
+      <input type="date" id="dateFilter">
+      <button id="applyFilter">Apply Filter</button>
+      <button id="clearFilter">Clear Filter</button>
+    </div>
+    
+    <div id="loading" class="loading">Loading climate data...</div>
+    <div id="error" class="error"></div>
+    
+    <div class="table-container">
+      <table id="dataTable">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Temperature (°C)</th>
+            <th>Humidity (%)</th>
+          </tr>
+        </thead>
+        <tbody id="dataTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+  
+  <footer>
+    <p>Real-time climate monitoring system | Data updates every 5 seconds</p>
+  </footer>
+
+  <script src="history.js"></script>
+</body>
+</html>
