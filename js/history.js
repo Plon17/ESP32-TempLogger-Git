@@ -1,7 +1,9 @@
 const SHEET_ID = '16SUgOaXTlA_Nf_YO9q0ZpEAiRRpheRUWdpfSEy7YYCc';
 const SHEET_NAME = 'Temp Sensor Data';
+const ITEMS_PER_PAGE = 50;
 
 let allData = [];
+let currentPage = 1;
 
 async function fetchData() {
   try {
@@ -53,8 +55,9 @@ function processData(dataRows) {
     }
   }
   
+  currentPage = 1;
   if (allData.length > 0) {
-    updateTable(allData);
+    filterData();
   } else {
     handleError(new Error('No valid data rows found'));
   }
@@ -69,10 +72,15 @@ function updateTable(data) {
   
   if (data.length === 0) {
     tableBody.innerHTML = '<tr><td colspan="5">No data available</td></tr>';
+    updatePagination(data);
     return;
   }
   
-  data.forEach(row => {
+  const start = (currentPage - 1) * ITEMS_PER_PAGE;
+  const end = start + ITEMS_PER_PAGE;
+  const paginatedData = data.slice(start, end);
+  
+  paginatedData.forEach(row => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${row.date}</td>
@@ -83,6 +91,20 @@ function updateTable(data) {
     `;
     tableBody.appendChild(tr);
   });
+  
+  updatePagination(data);
+}
+
+function updatePagination(data) {
+  const totalPages = Math.ceil(data.length / ITEMS_PER_PAGE);
+  const pageInfo = document.getElementById('pageInfo');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  
+  pageInfo.textContent = `Page ${currentPage} of ${totalPages}, Showing ${Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, data.length)}–${Math.min(currentPage * ITEMS_PER_PAGE, data.length)} of ${data.length} readings`;
+  
+  prevBtn.disabled = currentPage === 1;
+  nextBtn.disabled = currentPage === totalPages || totalPages === 0;
 }
 
 function filterData() {
@@ -102,7 +124,7 @@ function filterData() {
     if (start <= end) {
       filteredData = filteredData.filter(row => {
         const hour = parseInt(row.time.split(':')[0]);
-        return hour >= start && hour < end;
+        return hour >= start && hour <= end;
       });
     }
   } else if (startHour) {
@@ -110,27 +132,49 @@ function filterData() {
     filteredData = filteredData.filter(row => parseInt(row.time.split(':')[0]) === hour);
   } else if (endHour) {
     const hour = parseInt(endHour);
-    filteredData = filteredData.filter(row => parseInt(row.time.split(':')[0]) < parseInt(endHour));
+    filteredData = filteredData.filter(row => parseInt(row.time.split(':')[0]) <= hour);
   }
   
+  currentPage = 1;
   updateTable(filteredData);
 }
 
 function downloadCSV() {
-  const tableBody = document.getElementById('tableBody');
-  const rows = Array.from(tableBody.getElementsByTagName('tr'));
+  const dateFilter = document.getElementById('dateFilter').value;
+  const startHour = document.getElementById('startHour').value;
+  const endHour = document.getElementById('endHour').value;
   
-  if (rows.length === 0 || rows[0].textContent === 'No data available') {
+  let filteredData = allData;
+  
+  if (dateFilter) {
+    filteredData = filteredData.filter(row => row.date === dateFilter);
+  }
+  
+  if (startHour && endHour) {
+    const start = parseInt(startHour);
+    const end = parseInt(endHour);
+    if (start <= end) {
+      filteredData = filteredData.filter(row => {
+        const hour = parseInt(row.time.split(':')[0]);
+        return hour >= start && hour <= end;
+      });
+    }
+  } else if (startHour) {
+    const hour = parseInt(startHour);
+    filteredData = filteredData.filter(row => parseInt(row.time.split(':')[0]) === hour);
+  } else if (endHour) {
+    const hour = parseInt(endHour);
+    filteredData = filteredData.filter(row => parseInt(row.time.split(':')[0]) <= hour);
+  }
+  
+  if (filteredData.length === 0) {
     alert('No data to download');
     return;
   }
   
   const csvContent = [
     '"Date","Time","Temperature (°C)","Humidity (%)","Location"',
-    ...rows.map(row => {
-      const cells = row.getElementsByTagName('td');
-      return `"${cells[0].textContent}","${cells[1].textContent}",${cells[2].textContent},${cells[3].textContent},"${cells[4].textContent}"`;
-    })
+    ...filteredData.map(row => `"${row.date}","${row.time}",${row.temp.toFixed(1)},${row.hum.toFixed(1)},"${row.loc}"`)
   ].join('\n');
   
   const today = new Date().toISOString().split('T')[0];
@@ -188,6 +232,7 @@ function sortTable(column) {
     return aValue.localeCompare(bValue);
   });
   
+  currentPage = 1;
   filterData();
 }
 
@@ -206,6 +251,53 @@ document.getElementById('endHour').addEventListener('change', filterData);
 document.querySelectorAll('th[data-sort]').forEach(th => {
   th.addEventListener('click', () => sortTable(th.getAttribute('data-sort')));
 });
+
+document.getElementById('prevBtn').addEventListener('click', () => {
+  if (currentPage > 1) {
+    currentPage--;
+    filterData();
+  }
+});
+
+document.getElementById('nextBtn').addEventListener('click', () => {
+  const filteredData = applyFilters();
+  const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
+  if (currentPage < totalPages) {
+    currentPage++;
+    filterData();
+  }
+});
+
+function applyFilters() {
+  const dateFilter = document.getElementById('dateFilter').value;
+  const startHour = document.getElementById('startHour').value;
+  const endHour = document.getElementById('endHour').value;
+  
+  let filteredData = allData;
+  
+  if (dateFilter) {
+    filteredData = filteredData.filter(row => row.date === dateFilter);
+  }
+  
+  if (startHour && endHour) {
+    const start = parseInt(startHour);
+    const end = parseInt(endHour);
+    if (start <= end) {
+      filteredData = filteredData.filter(row => {
+        const hour = parseInt(row.time.split(':')[0]);
+        return hour >= start && hour <= end;
+      });
+    }
+  } else if (startHour) {
+    const hour = parseInt(startHour);
+    filteredData = filteredData.filter(row => parseInt(row.time.split(':')[0]) === hour);
+  } else if (endHour) {
+    const hour = parseInt(endHour);
+    filteredData = filteredData.filter(row => parseInt(row.time.split(':')[0]) <= hour);
+  }
+  
+  return filteredData;
+}
 
 document.getElementById('loading').style.display = 'block';
 fetchData();
