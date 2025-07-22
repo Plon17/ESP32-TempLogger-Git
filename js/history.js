@@ -4,6 +4,7 @@ const ITEMS_PER_PAGE = 50;
 
 let allData = [];
 let currentPage = 1;
+let filteredData = [];
 
 async function fetchData() {
   try {
@@ -104,7 +105,7 @@ function updatePagination(data) {
   pageInfo.textContent = `Page ${currentPage} of ${totalPages}, Showing ${Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, data.length)}–${Math.min(currentPage * ITEMS_PER_PAGE, data.length)} of ${data.length} readings`;
   
   prevBtn.disabled = currentPage === 1;
-  nextBtn.disabled = currentPage === totalPages || totalPages === 0;
+  nextBtn.disabled = currentPage >= totalPages || totalPages === 0;
 }
 
 function filterData() {
@@ -112,27 +113,19 @@ function filterData() {
   const startHour = document.getElementById('startHour').value;
   const endHour = document.getElementById('endHour').value;
   
-  let filteredData = allData;
+  filteredData = allData;
   
   if (dateFilter) {
     filteredData = filteredData.filter(row => row.date === dateFilter);
   }
   
-  if (startHour && endHour) {
-    const start = parseInt(startHour);
-    const end = parseInt(endHour);
-    if (start <= end) {
-      filteredData = filteredData.filter(row => {
-        const hour = parseInt(row.time.split(':')[0]);
-        return hour >= start && hour <= end;
-      });
-    }
-  } else if (startHour) {
-    const hour = parseInt(startHour);
-    filteredData = filteredData.filter(row => parseInt(row.time.split(':')[0]) === hour);
-  } else if (endHour) {
-    const hour = parseInt(endHour);
-    filteredData = filteredData.filter(row => parseInt(row.time.split(':')[0]) <= hour);
+  if (startHour || endHour) {
+    const start = startHour ? parseInt(startHour) : 0;
+    const end = endHour ? parseInt(endHour) : 23;
+    filteredData = filteredData.filter(row => {
+      const hour = parseInt(row.time.split(':')[0]);
+      return hour >= start && hour <= end;
+    });
   }
   
   currentPage = 1;
@@ -140,33 +133,6 @@ function filterData() {
 }
 
 function downloadCSV() {
-  const dateFilter = document.getElementById('dateFilter').value;
-  const startHour = document.getElementById('startHour').value;
-  const endHour = document.getElementById('endHour').value;
-  
-  let filteredData = allData;
-  
-  if (dateFilter) {
-    filteredData = filteredData.filter(row => row.date === dateFilter);
-  }
-  
-  if (startHour && endHour) {
-    const start = parseInt(startHour);
-    const end = parseInt(endHour);
-    if (start <= end) {
-      filteredData = filteredData.filter(row => {
-        const hour = parseInt(row.time.split(':')[0]);
-        return hour >= start && hour <= end;
-      });
-    }
-  } else if (startHour) {
-    const hour = parseInt(startHour);
-    filteredData = filteredData.filter(row => parseInt(row.time.split(':')[0]) === hour);
-  } else if (endHour) {
-    const hour = parseInt(endHour);
-    filteredData = filteredData.filter(row => parseInt(row.time.split(':')[0]) <= hour);
-  }
-  
   if (filteredData.length === 0) {
     alert('No data to download');
     return;
@@ -222,7 +188,7 @@ function sortTable(column) {
     loc: 'loc'
   }[column];
   
-  allData.sort((a, b) => {
+  filteredData.sort((a, b) => {
     const aValue = a[sortKey];
     const bValue = b[sortKey];
     
@@ -233,7 +199,7 @@ function sortTable(column) {
   });
   
   currentPage = 1;
-  filterData();
+  updateTable(filteredData);
 }
 
 document.getElementById('refreshBtn').addEventListener('click', () => {
@@ -255,49 +221,17 @@ document.querySelectorAll('th[data-sort]').forEach(th => {
 document.getElementById('prevBtn').addEventListener('click', () => {
   if (currentPage > 1) {
     currentPage--;
-    filterData();
+    updateTable(filteredData);
   }
 });
 
 document.getElementById('nextBtn').addEventListener('click', () => {
-  const filteredData = applyFilters();
   const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
   if (currentPage < totalPages) {
     currentPage++;
-    filterData();
+    updateTable(filteredData);
   }
 });
-
-function applyFilters() {
-  const dateFilter = document.getElementById('dateFilter').value;
-  const startHour = document.getElementById('startHour').value;
-  const endHour = document.getElementById('endHour').value;
-  
-  let filteredData = allData;
-  
-  if (dateFilter) {
-    filteredData = filteredData.filter(row => row.date === dateFilter);
-  }
-  
-  if (startHour && endHour) {
-    const start = parseInt(startHour);
-    const end = parseInt(endHour);
-    if (start <= end) {
-      filteredData = filteredData.filter(row => {
-        const hour = parseInt(row.time.split(':')[0]);
-        return hour >= start && hour <= end;
-      });
-    }
-  } else if (startHour) {
-    const hour = parseInt(startHour);
-    filteredData = filteredData.filter(row => parseInt(row.time.split(':')[0]) === hour);
-  } else if (endHour) {
-    const hour = parseInt(endHour);
-    filteredData = filteredData.filter(row => parseInt(row.time.split(':')[0]) <= hour);
-  }
-  
-  return filteredData;
-}
 
 document.getElementById('loading').style.display = 'block';
 fetchData();
