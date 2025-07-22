@@ -37,7 +37,6 @@ const sensorChart = new Chart(chartCtx, {
 // State management
 let lastTimestamp = null;
 let refreshIntervalId = null;
-const readingsHistory = [];
 
 async function fetchData() {
   try {
@@ -124,23 +123,6 @@ function updateDashboard(times, temps, hums, newDataFound) {
   sensorChart.data.datasets[0].data = temps;
   sensorChart.data.datasets[1].data = hums;
   sensorChart.update();
-  
-  // Update table
-  readingsHistory.length = 0;
-  times.forEach((time, i) => ReadingsHistory.push({
-      time: time.split(' ')[1],
-      temperature: temps[i].toFixed(1),
-      humidity: hums[i].toFixed(1)
-    })
-  );
-  
-  document.getElementById('readings-table').innerHTML = readingsHistory.map(reading => `
-    <tr>
-      <td>${reading.time}</td>
-      <td>${reading.temperature} °C</td>
-      <td>${reading.humidity} %</td>
-    </tr>
-  `).join('');
   
   // Update status
   const now = new Date();
