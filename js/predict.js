@@ -2,9 +2,13 @@ const SHEET_ID = '16SUgOaXTlA_Nf_YO9q0ZpEAiRRpheRUWdpfSEy7YYCc';
 const SHEET_NAME = 'Temp Sensor Data';
 
 let allData = [];
+let chart = null;
 
 async function fetchData() {
   try {
+    document.getElementById('loading').style.display = 'block';
+    document.getElementById('error').style.display = 'none';
+    
     const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_NAME)}`;
     const response = await fetch(`${url}&t=${new Date().getTime()}`, {
       cache: 'no-store',
@@ -14,43 +18,50 @@ async function fetchData() {
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     
     const dataText = await response.text();
-    console.log('Raw CSV:', dataText);
     const rows = dataText.split('\n').filter(row => row.trim() !== '');
-    console.log('Parsed Rows:', rows);
     
     if (rows.length <= 1) throw new Error('No data rows found in the sheet');
     
-    processData(rows.slice(1));
+    // Parse CSV with proper header handling
+    const headers = parseCSVRow(rows[0]).map(h => h.toLowerCase());
+    processData(rows.slice(1), headers);
   } catch (error) {
     handleError(error);
-    console.error('Fetch Error:', error);
   }
 }
 
-function processData(dataRows) {
+function processData(dataRows, headers) {
   allData = [];
+  const dateIdx = headers.findIndex(h => h.includes('date'));
+  const timeIdx = headers.findIndex(h => h.includes('time'));
+  const tempIdx = headers.findIndex(h => h.includes('temp'));
+  const humIdx = headers.findIndex(h => h.includes('hum'));
+  const locIdx = headers.findIndex(h => h.includes('loc'));
+
   for (const row of dataRows) {
     const cols = parseCSVRow(row);
-    console.log('Parsed cols:', cols);
     
     if (cols.length >= 5) {
       try {
-        const date = cols[0].replace(/^"|"$/g, '').trim();
-        const time = cols[1].replace(/^"|"$/g, '').trim();
-        const temp = parseFloat(cols[2].replace(/^"|"$/g, '').trim());
-        const hum = parseFloat(cols[3].replace(/^"|"$/g, '').trim());
-        const loc = cols[4].replace(/^"|"$/g, '').trim();
+        // Parse date in DD/MM/YYYY format
+        const dateParts = cols[dateIdx].split('/');
+        const isoDate = `${dateParts[2]}-${dateParts[1].padStart(2, '0')}-${dateParts[0].padStart(2, '0')}`;
         
-        if (!isNaN(temp) && !isNaN(hum) && date && time && loc) {
-          allData.push({ date, time, temp, hum, loc });
-        } else {
-          console.error('Invalid data:', { date, time, temp, hum, loc, row });
+        const temp = parseFloat(cols[tempIdx]);
+        const hum = parseFloat(cols[humIdx]);
+        
+        if (!isNaN(temp) && !isNaN(hum)) {
+          allData.push({
+            date: isoDate,
+            time: cols[timeIdx],
+            temp,
+            hum,
+            loc: cols[locIdx]
+          });
         }
       } catch (e) {
-        console.error('Error parsing row:', row, e);
+        console.error('Error parsing row:', e);
       }
-    } else {
-      console.error('Invalid column count:', cols, 'in row:', row);
     }
   }
   
@@ -68,8 +79,15 @@ function parseCSVRow(row) {
   
   for (let i = 0; i < row.length; i++) {
     const char = row[i];
+    
     if (char === '"') {
-      inQuotes = !inQuotes;
+      if (inQuotes && row[i + 1] === '"') {
+        // Escaped quote
+        current += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
     } else if (char === ',' && !inQuotes) {
       result.push(current);
       current = '';
@@ -77,8 +95,9 @@ function parseCSVRow(row) {
       current += char;
     }
   }
+  
   result.push(current);
-  return result.filter(item => item !== '');
+  return result.map(item => item.trim().replace(/^"|"$/g, ''));
 }
 
 function handleError(error) {
@@ -91,53 +110,66 @@ function handleError(error) {
 
 function calculateDailyAverages(data) {
   const dailyData = {};
+  
   data.forEach(row => {
-    if (!dailyData[row.date]) dailyData[row.date] = { temp: [], hum: [] };
+    if (!dailyData[row.date]) {
+      dailyData[row.date] = { temp: [], hum: [] };
+    }
     dailyData[row.date].temp.push(row.temp);
     dailyData[row.date].hum.push(row.hum);
   });
   
   const averages = {};
-  for (let date in dailyData) {
+  Object.keys(dailyData).forEach(date => {
+    const temps = dailyData[date].temp;
+    const hums = dailyData[date].hum;
+    
     averages[date] = {
-      temp: dailyData[date].temp.reduce((a, b) => a + b, 0) / dailyData[date].temp.length,
-      hum: dailyData[date].hum.reduce((a, b) => a + b, 0) / dailyData[date].hum.length
+      temp: temps.reduce((a, b) => a + b, 0) / temps.length,
+      hum: hums.reduce((a, b) => a + b, 0) / hums.length
     };
-  }
+  });
+  
   return averages;
 }
 
 function predictValues() {
-  if (allData.length === 0) {
-    alert('No data available for prediction');
-    return [];
-  }
+  if (allData.length === 0) return [];
   
-  allData.sort((a, b) => new Date(b.date + ' ' + b.time) - new Date(a.date + ' ' + a.time));
-  const latestDate = new Date(allData[0].date + ' ' + allData[0].time);
-  const dailyAverages = calculateDailyAverages(allData);
+  // Sort by date (YYYY-MM-DD format works natively)
+  const sortedData = [...allData].sort((a, b) => 
+    new Date(a.date) - new Date(b.date)
+  );
+  
+  const dailyAverages = calculateDailyAverages(sortedData);
   const dates = Object.keys(dailyAverages).sort();
   
-  if (dates.length < 2) {
-    alert('Need at least 2 days of data for prediction');
-    return [];
-  }
+  if (dates.length < 2) return [];
   
-  const tempTrend = (dailyAverages[dates[dates.length - 1]].temp - dailyAverages[dates[0]].temp) / (dates.length - 1);
-  const humTrend = (dailyAverages[dates[dates.length - 1]].hum - dailyAverages[dates[0]].hum) / (dates.length - 1);
-  const lastTemp = dailyAverages[dates[dates.length - 1]].temp;
-  const lastHum = dailyAverages[dates[dates.length - 1]].hum;
+  // Get first and last dates
+  const firstDate = dates[0];
+  const lastDate = dates[dates.length - 1];
   
+  // Calculate days between first and last date
+  const daysBetween = (new Date(lastDate) - new Date(firstDate)) / (1000 * 60 * 60 * 24);
+  
+  // Calculate trends
+  const tempTrend = (dailyAverages[lastDate].temp - dailyAverages[firstDate].temp) / daysBetween;
+  const humTrend = (dailyAverages[lastDate].hum - dailyAverages[firstDate].hum) / daysBetween;
+  
+  const lastTemp = dailyAverages[lastDate].temp;
+  const lastHum = dailyAverages[lastDate].hum;
+  
+  // Generate predictions
   const predictions = [];
   for (let i = 1; i <= 7; i++) {
-    const predDate = new Date(latestDate);
-    predDate.setDate(latestDate.getDate() + i);
-    const predTemp = lastTemp + tempTrend * i;
-    const predHum = lastHum + humTrend * i;
+    const predDate = new Date(lastDate);
+    predDate.setDate(predDate.getDate() + i);
+    
     predictions.push({
-      date: predDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'numeric', day: 'numeric' }),
-      temp: Math.max(0, predTemp),
-      hum: Math.min(100, Math.max(0, predHum))
+      date: predDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }),
+      temp: Math.max(0, lastTemp + tempTrend * i),
+      hum: Math.min(100, Math.max(0, lastHum + humTrend * i))
     });
   }
   
@@ -166,44 +198,63 @@ function updateCards(predictions) {
 }
 
 function drawChart(predictions) {
-  const canvas = document.getElementById('chartCanvas');
-  const ctx = canvas.getContext('2d');
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const ctx = document.getElementById('chartCanvas').getContext('2d');
   
-  const dates = predictions.map(p => p.date);
-  const temps = predictions.map(p => p.temp);
-  const hums = predictions.map(p => p.hum);
+  // Destroy existing chart if it exists
+  if (chart) chart.destroy();
   
-  const maxValue = Math.max(...temps, ...hums);
-  const step = canvas.height / (maxValue + 10);
-  const width = canvas.width / (dates.length + 1);
-  
-  ctx.beginPath();
-  ctx.strokeStyle = 'blue';
-  ctx.lineWidth = 2;
-  temps.forEach((temp, i) => {
-    const x = (i + 1) * width;
-    const y = canvas.height - (temp * step);
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  });
-  ctx.stroke();
-  
-  ctx.beginPath();
-  ctx.strokeStyle = 'red';
-  hums.forEach((hum, i) => {
-    const x = (i + 1) * width;
-    const y = canvas.height - (hum * step);
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  });
-  ctx.stroke();
-  
-  ctx.fillStyle = 'black';
-  ctx.font = '12px Arial';
-  dates.forEach((date, i) => {
-    const x = (i + 1) * width;
-    ctx.fillText(date.split(',')[1].trim(), x - 20, canvas.height - 5); // Show only date part under chart
+  chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: predictions.map(p => p.date.split(',')[0]),
+      datasets: [
+        {
+          label: 'Temperature (°C)',
+          data: predictions.map(p => p.temp),
+          borderColor: 'rgb(255, 99, 132)',
+          backgroundColor: 'rgba(255, 99, 132, 0.5)',
+          yAxisID: 'y',
+        },
+        {
+          label: 'Humidity (%)',
+          data: predictions.map(p => p.hum),
+          borderColor: 'rgb(54, 162, 235)',
+          backgroundColor: 'rgba(54, 162, 235, 0.5)',
+          yAxisID: 'y1',
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      interaction: {
+        mode: 'index',
+        intersect: false,
+      },
+      scales: {
+        y: {
+          type: 'linear',
+          display: true,
+          position: 'left',
+          title: {
+            display: true,
+            text: 'Temperature (°C)'
+          }
+        },
+        y1: {
+          type: 'linear',
+          display: true,
+          position: 'right',
+          max: 100,
+          title: {
+            display: true,
+            text: 'Humidity (%)'
+          },
+          grid: {
+            drawOnChartArea: false,
+          },
+        }
+      }
+    }
   });
 }
 
@@ -214,5 +265,7 @@ function generatePredictions() {
   document.getElementById('loading').style.display = 'none';
 }
 
-document.getElementById('loading').style.display = 'block';
-fetchData();
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+  fetchData();
+});

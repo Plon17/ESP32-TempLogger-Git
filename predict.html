@@ -4,7 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Climate Prediction</title>
-  <link rel="stylesheet" href="styles/predict.css?t=1721664060">
+  <link rel="stylesheet" href="styles/predict.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
   <nav class="navbar">
@@ -28,13 +29,15 @@
     <div class="prediction-wrapper">
       <div class="prediction-container" id="predictionCards"></div>
     </div>
-    <div id="chartCanvas" class="chart-canvas"></div>
+    <div class="chart-container">
+      <canvas id="chartCanvas"></canvas>
+    </div>
   </div>
   
   <footer>
     <p>Climate prediction based on historical data</p>
   </footer>
 
-  <script src="js/predict.js?t=1721664060"></script>
+  <script src="js/predict.js"></script>
 </body>
 </html>
