@@ -1,6 +1,6 @@
 // Configuration
 const MAX_DATA_POINTS = 10;
-const REFRESH_INTERVAL = 5000;
+const REFRESH_INTERVAL = 6000; // Match ESP32's 6-second interval
 
 // Chart initialization
 const chartCtx = document.getElementById('chart').getContext('2d');
@@ -41,13 +41,13 @@ const readingsHistory = [];
 
 async function fetchData() {
   try {
-    // Use the correct sheet ID and gid (replace '0' with actual gid if needed)
     const sheetId = '16SUgOaXTlA_Nf_YO9q0ZpEAiRRpheRUWdpfSEy7YYCc';
     const sheetName = 'Temp Sensor Data';
     const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
     
     const response = await fetch(`${url}&t=${new Date().getTime()}`, {
-      cache: 'no-store'
+      cache: 'no-store',
+      headers: { 'Accept': 'text/csv' }
     });
     
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -79,15 +79,15 @@ function processData(dataRows) {
     const cols = parseCSVRow(dataRows[i]);
     console.log('Parsed cols:', cols);
     
-    if (cols.length >= 5) { // Expecting Date, Time, Temp, Humidity, Location
+    if (cols.length >= 5) {
       try {
-        const dateStr = cols[0].trim();
-        const timeStr = cols[1].trim();
+        const dateStr = cols[0].replace(/^"|"$/g, '').trim();
+        const timeStr = cols[1].replace(/^"|"$/g, '').trim();
         const fullTimestamp = `${dateStr} ${timeStr}`;
-        const temp = parseFloat(cols[2].trim());
-        const hum = parseFloat(cols[3].trim());
+        const temp = parseFloat(cols[2].replace(/^"|"$/g, '').trim());
+        const hum = parseFloat(cols[3].replace(/^"|"$/g, '').trim());
         
-        if (!isNaN(temp) && !isNaN(hum)) {
+        if (!isNaN(temp) && !isNaN(hum) && dateStr && timeStr) {
           newTimes.push(fullTimestamp);
           newTemps.push(temp);
           newHums.push(hum);
@@ -97,7 +97,7 @@ function processData(dataRows) {
             lastTimestamp = fullTimestamp;
           }
         } else {
-          console.error('Invalid temp or hum:', { temp, hum, row: dataRows[i] });
+          console.error('Invalid data:', { dateStr, timeStr, temp, hum, row: dataRows[i] });
         }
       } catch (e) {
         console.error('Error parsing row:', dataRows[i], e);
@@ -108,57 +108,49 @@ function processData(dataRows) {
   }
 
   console.log('Processed data:', { newTimes, newTemps, newHums, newDataFound });
-  updateDashboard(newTimes.reverse(), newTemps.reverse(), newHums.reverse(), newDataFound);
+  if (newTimes.length > 0) {
+    updateDashboard(newTimes.reverse(), newTemps.reverse(), newHums.reverse(), newDataFound);
+  } else {
+    handleError(new Error('No valid data rows found'));
+  }
 }
 
 function updateDashboard(times, temps, hums, newDataFound) {
-  if (times.length > 0) {
-    document.getElementById('loading').style.display = 'none';
-    document.getElementById('error').style.display = 'none';
-    
-    // Clear existing data and add new data
-    sensorChart.data.labels = times;
-    sensorChart.data.datasets[0].data = temps;
-    sensorChart.data.datasets[1].data = hums;
-    
-    sensorChart.update();
-    
-    // Update readings table
-    readingsHistory.length = 0; // Clear history
-    times.forEach((time, i) => {
-      readingsHistory.push({
-        time: time.split(' ')[1], // Show only time
-        temperature: temps[i].toFixed(1),
-        humidity: hums[i].toFixed(1)
-      });
-    });
-    
-    document.getElementById('readings-table').innerHTML = readingsHistory.map(reading => `
-      <tr>
-        <td>${reading.time}</td>
-        <td>${reading.temperature} °C</td>
-        <td>${reading.humidity} %</td>
-      </tr>
-    `).join('');
-    
-    // Update status and last fetched time
-    const now = new Date();
-    document.getElementById('status').textContent = `Last updated: ${now.toLocaleTimeString()}`;
-    document.getElementById('lastFetched').textContent = `Last fetched: ${times[times.length - 1]}`;
-    
-    const indicator = document.getElementById('dataIndicator');
-    const dataStatus = document.getElementById('dataStatus');
-    
-    if (newDataFound) {
-      indicator.className = 'indicator on';
-      dataStatus.textContent = 'Incoming Data: On';
-    } else {
-      indicator.className = 'indicator off';
-      dataStatus.textContent = 'Incoming Data: Off';
-    }
-  } else {
-    showError('No valid data found in the sheet.');
-  }
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('error').style.display = 'none';
+  
+  // Replace chart data
+  sensorChart.data.labels = times;
+  sensorChart.data.datasets[0].data = temps;
+  sensorChart.data.datasets[1].data = hums;
+  sensorChart.update();
+  
+  // Update table
+  readingsHistory.length = 0;
+  times.forEach((time, i) => ReadingsHistory.push({
+      time: time.split(' ')[1],
+      temperature: temps[i].toFixed(1),
+      humidity: hums[i].toFixed(1)
+    })
+  );
+  
+  document.getElementById('readings-table').innerHTML = readingsHistory.map(reading => `
+    <tr>
+      <td>${reading.time}</td>
+      <td>${reading.temperature} °C</td>
+      <td>${reading.humidity} %</td>
+    </tr>
+  `).join('');
+  
+  // Update status
+  const now = new Date();
+  document.getElementById('status').textContent = `Last updated: ${now.toLocaleTimeString()}`;
+  document.getElementById('lastFetched').textContent = `Last fetched: ${times[times.length - 1] || 'Never'}`;
+  
+  const indicator = document.getElementById('dataIndicator');
+  const dataStatus = document.getElementById('dataStatus');
+  indicator.className = newDataFound ? 'indicator on' : 'indicator off';
+  dataStatus.textContent = newDataFound ? 'Incoming Data: On' : 'Incoming Data: Off';
 }
 
 function getChartOptions() {
@@ -198,7 +190,7 @@ function getChartOptions() {
           color: '#7f8c8d',
           maxRotation: 0,
           callback: function(value) {
-            return this.getLabelForValue(value).split(' ')[1]; // Show only time
+            return this.getLabelForValue(value).split(' ')[1];
           }
         }
       },
@@ -248,7 +240,6 @@ function parseCSVRow(row) {
   
   for (let i = 0; i < row.length; i++) {
     const char = row[i];
-    
     if (char === '"') {
       inQuotes = !inQuotes;
     } else if (char === ',' && !inQuotes) {
@@ -258,26 +249,21 @@ function parseCSVRow(row) {
       current += char;
     }
   }
-  
   result.push(current);
   return result.filter(item => item !== '');
 }
 
-function showError(message) {
+function handleError(error) {
+  console.error('Error:', error);
   const errorEl = document.getElementById('error');
-  errorEl.textContent = message;
+  errorEl.textContent = `Error loading data: ${error.message}`;
   errorEl.style.display = 'block';
   document.getElementById('loading').style.display = 'none';
 }
 
-function handleError(error) {
-  console.error('Error:', error);
-  showError(`Error loading data: ${error.message}`);
-}
-
-// Event listeners
 document.getElementById('refreshBtn').addEventListener('click', () => {
   document.getElementById('loading').style.display = 'block';
+  document.getElementById('error').style.display = 'none';
   fetchData();
 });
 
@@ -285,7 +271,6 @@ window.addEventListener('beforeunload', () => {
   if (refreshIntervalId) clearInterval(refreshIntervalId);
 });
 
-// Initialization
 document.getElementById('loading').style.display = 'block';
 fetchData();
 refreshIntervalId = setInterval(fetchData, REFRESH_INTERVAL);
