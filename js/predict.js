@@ -153,8 +153,8 @@ function updateCards(predictions) {
     card.className = 'prediction-card';
     card.innerHTML = `
       <h3>${pred.date}</h3>
-      <p>Temp: ${pred.temp.toFixed(1)}°C</p>
-      <p>Hum: ${pred.hum.toFixed(1)}%</p>
+      <p>☀️ Temp: ${pred.temp.toFixed(1)}°C</p>
+      <p>💧 Hum: ${pred.hum.toFixed(1)}%</p>
     `;
     container.appendChild(card);
   });

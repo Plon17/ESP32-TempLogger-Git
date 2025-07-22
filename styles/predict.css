@@ -132,9 +132,13 @@ button:disabled {
 
 .prediction-container {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(7, minmax(120px, 1fr));
+  justify-content: center;
   gap: 20px;
   margin-bottom: 20px;
+  max-width: 900px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .prediction-card {
@@ -143,6 +147,8 @@ button:disabled {
   padding: 15px;
   text-align: center;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  border: 2px solid #e0e0e0;
+  background-image: linear-gradient(135deg, #ffffff 0%, #f0f4f8 100%);
 }
 
 .prediction-card h3 {
@@ -186,5 +192,9 @@ button:disabled {
   .filter-panel {
     flex-direction: column;
     align-items: flex-start;
+  }
+  
+  .prediction-container {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
