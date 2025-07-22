@@ -1,3 +1,5 @@
+let currentData = []; // Store current displayed data
+
 async function fetchAllData() {
   try {
     document.getElementById('loading').style.display = 'block';
@@ -72,6 +74,7 @@ function showError(message) {
 function renderTable(data) {
   const tbody = document.getElementById('dataTableBody');
   tbody.innerHTML = '';
+  currentData = data; // Update current displayed data
   
   data.forEach(row => {
     const tr = document.createElement('tr');
@@ -83,6 +86,21 @@ function renderTable(data) {
     `;
     tbody.appendChild(tr);
   });
+}
+
+function downloadCSV() {
+  const csv = [
+    'Date,Time,Temperature (°C),Humidity (%)',
+    ...currentData.map(row => `${row.date},${row.time},${row.temp.toFixed(1)},${row.hum.toFixed(1)}`)
+  ].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const now = new Date().toISOString().split('T')[0];
+  a.download = `climate_data_${now}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 async function init() {
@@ -103,6 +121,8 @@ async function init() {
     const data = await fetchAllData();
     renderTable(data);
   });
+  
+  document.getElementById('downloadBtn').addEventListener('click', downloadCSV);
 }
 
 init();
