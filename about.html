@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>About</title>
+  <link rel="stylesheet" href="styles/about.css?t=1721664080">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-brand">Climate Monitor</div>
+    <ul class="navbar-links">
+      <li><a href="index.html">Live Reading</a></li>
+      <li><a href="chart.html">Chart</a></li>
+      <li><a href="history.html">History</a></li>
+      <li><a href="predict.html">Predictions</a></li>
+      <li><a href="about.html" class="active">About</a></li>
+    </ul>
+  </nav>
+
+  <div class="container">
+    <section class="creator-section">
+      <div class="portrait">
+        <img src="images/Ira-chan.jpeg" alt="Creator Portrait">
+      </div>
+      <div class="creator-info">
+        <p>Creator = [Your Name]</p>
+      </div>
+    </section>
+
+    <section class="info-section">
+      <h2>About This Site</h2>
+      <p>Welcome to the Climate Monitor, a project tracking temperature and humidity data in real-time. This site uses a sensor to collect data every 6 seconds, stored in a Google Sheet, and visualized with custom charts and Power BI integration.</p>
+      <ul>
+        <li><strong>Live Reading:</strong> Updates every 6 seconds with the latest temp and humidity from the sensor.</li>
+        <li><strong>Chart:</strong> Features a line graph comparing temp and humidity trends, refreshing automatically.</li>
+        <li><strong>History:</strong> Shows all recorded data, but updates only when manually refreshed via the sheet.</li>
+        <li><strong>Predict:</strong> Forecasts the next 7 days based on historical trends, auto-loading on page visit.</li>
+        <li><strong>Pie/Scatter:</strong> Displays temp and humidity distributions with a scatter plot for correlations, powered by Power BI.</li>
+        <li><strong>Line Chart:</strong> Plots temp and humidity trends on one chart, updated via Power BI refreshes.</li>
+      </ul>
+    </section>
+  </div>
+
+  <footer>
+    <p>Climate Monitor © 2025 [Your Name]</p>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,148 @@
+:root {
+  --primary-color: #2c7873;
+  --accent-color: #004358;
+  --text-color: #333;
+  --light-bg: #f8f9fa;
+  --nav-bg: #1a5f5a;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: white;
+  color: var(--text-color);
+  line-height: 1.6;
+}
+
+.navbar {
+  background-color: var(--nav-bg);
+  padding: 10px 20px;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.navbar-brand {
+  color: white;
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.navbar-links {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  gap: 20px;
+}
+
+.navbar-links li {
+  display: inline;
+}
+
+.navbar-links a {
+  color: white;
+  text-decoration: none;
+  font-weight: 500;
+  padding: 8px 12px;
+  border-radius: 4px;
+  transition: background-color 0.3s;
+}
+
+.navbar-links a:hover {
+  background-color: var(--accent-color);
+}
+
+.navbar-links a.active {
+  background-color: var(--accent-color);
+}
+
+.container {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: 25px;
+  margin-bottom: 20px;
+}
+
+.creator-section {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.portrait img {
+  width: 200px;
+  height: 300px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.creator-info {
+  margin-left: 20px;
+  font-size: 1.2rem;
+  color: var(--accent-color);
+}
+
+.info-section h2 {
+  color: var(--accent-color);
+  margin-top: 0;
+  margin-bottom: 15px;
+}
+
+.info-section p {
+  margin-bottom: 10px;
+}
+
+.info-section ul {
+  list-style-type: disc;
+  padding-left: 20px;
+}
+
+.info-section li {
+  margin-bottom: 5px;
+}
+
+footer {
+  text-align: center;
+  padding: 10px;
+  background-color: var(--light-bg);
+  border-radius: 8px;
+}
+
+@media (max-width: 768px) {
+  body {
+    padding: 15px;
+  }
+  
+  .container {
+    padding: 15px;
+  }
+  
+  .navbar {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .navbar-links {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .creator-section {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .portrait img {
+    margin-bottom: 10px;
+  }
+  
+  .creator-info {
+    margin-left: 0;
+  }
+}
