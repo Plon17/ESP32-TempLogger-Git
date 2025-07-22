@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Climate Prediction</title>
+  <link rel="stylesheet" href="styles/predict.css?t=1721664060">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-brand">Climate Monitor</div>
+    <ul class="navbar-links">
+      <li><a href="index.html">Live Reading</a></li>
+      <li><a href="chart.html">Chart</a></li>
+      <li><a href="history.html">History</a></li>
+      <li><a href="predict.html" class="active">Predictins</a></li>
+    </ul>
+  </nav>
+  
+  <div class="container">
+    <header>
+      <h2>Climate Prediction</h2>
+    </header>
+    
+    <div class="filter-panel">
+      <div class="filter-group">
+        <label for="startDate">Start Date:</label>
+        <input type="date" id="startDate" value="2025-07-15">
+      </div>
+      <div class="filter-group">
+        <label for="endDate">End Date:</label>
+        <input type="date" id="endDate" value="2025-07-21">
+      </div>
+      <button id="predictBtn">Generate Prediction</button>
+    </div>
+    
+    <div id="loading">Loading historical data...</div>
+    <div id="error"></div>
+    
+    <div class="prediction-container">
+      <table id="predictionTable">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Predicted Temp (°C)</th>
+            <th>Predicted Humidity (%)</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+      <div id="chartCanvas" class="chart-canvas"></div>
+    </div>
+  </div>
+  
+  <footer>
+  </footer>
+
+  <script src="js/predict.js?t=1721664060"></script>
+</body>
+</html>
