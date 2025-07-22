@@ -3,8 +3,8 @@ const SHEET_NAME = 'Temp Sensor Data';
 const ITEMS_PER_PAGE = 50;
 
 let allData = [];
-let currentPage = 1;
 let filteredData = [];
+let currentPage = 1;
 
 async function fetchData() {
   try {
@@ -57,29 +57,30 @@ function processData(dataRows) {
   }
   
   currentPage = 1;
+  filteredData = allData;
   if (allData.length > 0) {
-    filterData();
+    updateTable();
   } else {
     handleError(new Error('No valid data rows found'));
   }
 }
 
-function updateTable(data) {
+function updateTable() {
   document.getElementById('loading').style.display = 'none';
   document.getElementById('error').style.display = 'none';
   
   const tableBody = document.getElementById('tableBody');
   tableBody.innerHTML = '';
   
-  if (data.length === 0) {
+  if (filteredData.length === 0) {
     tableBody.innerHTML = '<tr><td colspan="5">No data available</td></tr>';
-    updatePagination(data);
+    updatePagination();
     return;
   }
   
   const start = (currentPage - 1) * ITEMS_PER_PAGE;
-  const end = start + ITEMS_PER_PAGE;
-  const paginatedData = data.slice(start, end);
+  const end = Math.min(start + ITEMS_PER_PAGE, filteredData.length);
+  const paginatedData = filteredData.slice(start, end);
   
   paginatedData.forEach(row => {
     const tr = document.createElement('tr');
@@ -93,16 +94,16 @@ function updateTable(data) {
     tableBody.appendChild(tr);
   });
   
-  updatePagination(data);
+  updatePagination();
 }
 
-function updatePagination(data) {
-  const totalPages = Math.ceil(data.length / ITEMS_PER_PAGE);
+function updatePagination() {
+  const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
   const pageInfo = document.getElementById('pageInfo');
   const prevBtn = document.getElementById('prevBtn');
   const nextBtn = document.getElementById('nextBtn');
   
-  pageInfo.textContent = `Page ${currentPage} of ${totalPages}, Showing ${Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, data.length)}–${Math.min(currentPage * ITEMS_PER_PAGE, data.length)} of ${data.length} readings`;
+  pageInfo.textContent = `Page ${currentPage} of ${totalPages}, Showing ${Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, filteredData.length)}–${Math.min(currentPage * ITEMS_PER_PAGE, filteredData.length)} of ${filteredData.length} readings`;
   
   prevBtn.disabled = currentPage === 1;
   nextBtn.disabled = currentPage >= totalPages || totalPages === 0;
@@ -129,7 +130,16 @@ function filterData() {
   }
   
   currentPage = 1;
-  updateTable(filteredData);
+  updateTable();
+}
+
+function clearFilters() {
+  document.getElementById('dateFilter').value = '';
+  document.getElementById('startHour').value = '';
+  document.getElementById('endHour').value = '';
+  filteredData = allData;
+  currentPage = 1;
+  updateTable();
 }
 
 function downloadCSV() {
@@ -199,7 +209,7 @@ function sortTable(column) {
   });
   
   currentPage = 1;
-  updateTable(filteredData);
+  updateTable();
 }
 
 document.getElementById('refreshBtn').addEventListener('click', () => {
@@ -208,6 +218,7 @@ document.getElementById('refreshBtn').addEventListener('click', () => {
   fetchData();
 });
 
+document.getElementById('clearFiltersBtn').addEventListener('click', clearFilters);
 document.getElementById('downloadBtn').addEventListener('click', downloadCSV);
 
 document.getElementById('dateFilter').addEventListener('change', filterData);
@@ -221,7 +232,7 @@ document.querySelectorAll('th[data-sort]').forEach(th => {
 document.getElementById('prevBtn').addEventListener('click', () => {
   if (currentPage > 1) {
     currentPage--;
-    updateTable(filteredData);
+    updateTable();
   }
 });
 
@@ -229,7 +240,7 @@ document.getElementById('nextBtn').addEventListener('click', () => {
   const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
   if (currentPage < totalPages) {
     currentPage++;
-    updateTable(filteredData);
+    updateTable();
   }
 });
 

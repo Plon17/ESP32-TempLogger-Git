@@ -27,7 +27,7 @@
         <input type="date" id="dateFilter">
       </div>
       <div class="filter-group">
-        <label>Filter by Hour:</label>
+        <label>Filter by Hour Range:</label>
         <select id="startHour">
           <option value="">Any</option>
           <option value="00">00</option>
@@ -84,6 +84,7 @@
           <option value="23">23</option>
         </select>
       </div>
+      <button id="clearFiltersBtn">Clear Filters</button>
       <button id="refreshBtn">Refresh Data</button>
       <button id="downloadBtn">Download CSV</button>
     </div>
@@ -113,6 +114,7 @@
   </div>
   
   <footer>
+    <p>Climate data history | Filter and download data</p>
   </footer>
 
   <script src="js/history.js?t=1721722300"></script>

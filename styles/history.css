@@ -101,7 +101,7 @@ h2 {
 .filter-panel {
   display: flex;
   flex-wrap: wrap;
-  gap: 20px;
+  gap: 15px;
   align-items: center;
   background-color: var(--light-bg);
   padding: 12px 20px;
