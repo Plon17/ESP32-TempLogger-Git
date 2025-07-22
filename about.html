@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>About Climate Monitor</title>
+  <link rel="stylesheet" href="styles/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-brand">Climate Monitor</div>
+    <ul class="nav-links">
+      <li><a href="index.html">Dashboard</a></li>
+      <li><a href="history.html">History</a></li>
+      <li><a href="live.html">Live Readings</a></li>
+      <li><a href="about.html" class="active">About</a></li>
+    </ul>
+  </nav>
+
+  <div class="dashboard-container">
+    <header>
+      <h2>About Climate Monitoring System</h2>
+    </header>
+    
+    <section>
+      <p>This climate monitoring system collects real-time temperature and humidity data using a DHT11 sensor connected to an ESP32 microcontroller. The data is processed through a Python script and stored in a Google Sheet via Google Apps Script. The website then fetches this data for visualization.</p>
+      <p>Features include:</p>
+      <ul>
+        <li>Dashboard: Real-time line charts showing temperature and humidity trends</li>
+        <li>History: Table-based view of all recorded data with date filtering</li>
+        <li>Live Readings: Thermostat-style display of the most recent measurements</li>
+      </ul>
+      <p>Data is updated every 5 seconds, providing near real-time monitoring of environmental conditions.</p>
+    </section>
+  </div>
+  
+  <footer>
+    <p>Real-time climate monitoring system | Data updates every 5 seconds</p>
+  </footer>
+</body>
+</html>

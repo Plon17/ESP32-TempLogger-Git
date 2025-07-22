@@ -124,9 +124,20 @@ h2 {
   margin-bottom: 20px;
 }
 
-.status-indicator {
+.status-panel .refresh-btn {
+  flex: 0 0 auto;
+}
+
+.status-panel .status-indicator {
+  flex: 1;
   display: flex;
+  justify-content: center;
   align-items: center;
+  gap: 8px;
+}
+
+.status-panel .last-update {
+  flex: 0 0 auto;
 }
 
 .indicator {
@@ -253,5 +264,19 @@ footer {
   
   .nav-links li {
     margin-left: 0;
+  }
+  
+  .status-panel {
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  
+  .status-panel .status-indicator {
+    justify-content: flex-start;
+  }
+  
+  .status-panel .last-update {
+    align-self: flex-end;
   }
 }
