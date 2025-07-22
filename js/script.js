@@ -37,18 +37,23 @@ const sensorChart = new Chart(chartCtx, {
 // State management
 let lastTimestamp = null;
 let refreshIntervalId = null;
+const readingsHistory = [];
 
 // Main functions
 async function fetchData() {
   try {
     const url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS6P6hzIdOoBMMRfgCgFF7gQ9DWvhlsmXz2hxHx3mmJuYIlanN8QjWWYT1V34UXd9PJC-2qWbTiBriZ/pub?gid=0&single=true&output=csv';
     
-    const response = await fetch(`${url}&t=${new Date().getTime()}`);
+    const response = await fetch(`${url}&t=${new Date().getTime()}`, {
+      cache: 'no-store'
+    });
     
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     
     const dataText = await response.text();
+    console.log('Raw CSV:', dataText);
     const rows = dataText.split('\n').filter(row => row.trim() !== '');
+    console.log('Parsed Rows:', rows);
     
     if (rows.length <= 1) throw new Error('No data rows found in the sheet');
     
@@ -64,10 +69,13 @@ function processData(dataRows) {
   const newHums = [];
   let newDataFound = false;
 
+  console.log('Processing rows:', dataRows);
+
   const startIdx = Math.max(0, dataRows.length - MAX_DATA_POINTS);
   
   for (let i = dataRows.length - 1; i >= startIdx; i--) {
     const cols = parseCSVRow(dataRows[i]);
+    console.log('Parsed cols:', cols);
     
     if (cols.length >= 4) {
       try {
@@ -78,27 +86,27 @@ function processData(dataRows) {
         const hum = parseFloat(cols[3].trim());
         
         if (!isNaN(temp) && !isNaN(hum)) {
+          newTimes.push(fullTimestamp);
+          newTemps.push(temp);
+          newHums.push(hum);
+          
           if (!lastTimestamp || new Date(fullTimestamp) > new Date(lastTimestamp)) {
             newDataFound = true;
             lastTimestamp = fullTimestamp;
           }
-          
-          newTimes.push(fullTimestamp);
-          newTemps.push(temp);
-          newHums.push(hum);
+        } else {
+          console.error('Invalid temp or hum:', { temp, hum });
         }
       } catch (e) {
-        console.error('Error parsing row:', e);
+        console.error('Error parsing row:', dataRows[i], e);
       }
+    } else {
+      console.error('Invalid column count:', cols);
     }
   }
 
-  updateDashboard(
-    newTimes.reverse(),
-    newTemps.reverse(),
-    newHums.reverse(),
-    newDataFound
-  );
+  console.log('Processed data:', { newTimes, newTemps, newHums, newDataFound });
+  updateDashboard(newTimes.reverse(), newTemps.reverse(), newHums.reverse(), newDataFound);
 }
 
 function updateDashboard(times, temps, hums, newDataFound) {
@@ -106,10 +114,28 @@ function updateDashboard(times, temps, hums, newDataFound) {
     document.getElementById('loading').style.display = 'none';
     document.getElementById('error').style.display = 'none';
     
-    sensorChart.data.labels = times;
-    sensorChart.data.datasets[0].data = temps;
-    sensorChart.data.datasets[1].data = hums;
+    sensorChart.data.labels = [...sensorChart.data.labels, ...times].slice(-MAX_DATA_POINTS);
+    sensorChart.data.datasets[0].data = [...sensorChart.data.datasets[0].data, ...temps].slice(-MAX_DATA_POINTS);
+    sensorChart.data.datasets[1].data = [...sensorChart.data.datasets[1].data, ...hums].slice(-MAX_DATA_POINTS);
+    
     sensorChart.update();
+    
+    times.forEach((time, i) => {
+      readingsHistory.unshift({
+        time: time.split(' ')[1],
+        temperature: temps[i].toFixed(1),
+        humidity: hums[i].toFixed(1)
+      });
+    });
+    readingsHistory.splice(MAX_DATA_POINTS);
+    
+    document.getElementById('readings-table').innerHTML = readingsHistory.map(reading => `
+      <tr>
+        <td>${reading.time}</td>
+        <td>${reading.temperature} °C</td>
+        <td>${reading.humidity} %</td>
+      </tr>
+    `).join('');
     
     updateStatus(newDataFound);
   } else {
@@ -226,15 +252,15 @@ function parseCSVRow(row) {
     if (char === '"') {
       inQuotes = !inQuotes;
     } else if (char === ',' && !inQuotes) {
-      result.push(current);
+      result.push(current.trim());
       current = '';
     } else {
       current += char;
     }
   }
   
-  result.push(current);
-  return result;
+  result.push(current.trim());
+  return result.filter(item => item !== '');
 }
 
 function showError(message) {
