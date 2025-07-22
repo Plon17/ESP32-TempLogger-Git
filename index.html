@@ -4,40 +4,28 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Climate Sensor Dashboard</title>
-  <link rel="stylesheet" href="styles/style.css">
+  <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-  <nav class="navbar">
-    <div class="nav-brand">Climate Monitor</div>
-    <ul class="nav-links">
-      <li><a href="index.html" class="active">Dashboard</a></li>
-      <li><a href="history.html">History</a></li>
-      <li><a href="live.html">Live Readings</a></li>
-      <li><a href="about.html">About</a></li>
-    </ul>
-  </nav>
-
   <div class="dashboard-container">
     <header>
       <h2>Climate Sensor Dashboard</h2>
     </header>
     
     <div class="status-panel">
-      <div class="refresh-btn">
+      <div>
         <button id="refreshBtn">Refresh Data</button>
       </div>
       <div class="status-indicator">
+        <span id="status">Last updated: Never</span>
         <div class="indicator off" id="dataIndicator"></div>
         <span id="dataStatus">Incoming Data: Off</span>
       </div>
-      <div class="last-update">
-        <span id="status">Last updated: Never</span>
-      </div>
     </div>
     
-    <div id="loading" class="loading">Loading climate data...</div>
-    <div id="error" class="error"></div>
+    <div id="loading">Loading climate data...</div>
+    <div id="error"></div>
     
     <div class="chart-container">
       <canvas id="chart" height="400"></canvas>
@@ -45,9 +33,9 @@
   </div>
   
   <footer>
-    <p>Live Temp Sensor</p>
+    <p>Real-time climate monitoring system | Data updates every 5 seconds</p>
   </footer>
 
-  <script src="js/script.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
