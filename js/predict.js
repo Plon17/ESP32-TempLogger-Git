@@ -6,6 +6,7 @@ let chart = null;
 
 async function fetchData() {
   try {
+    document.getElementById('loading').textContent = 'Loading historical data...';
     document.getElementById('loading').style.display = 'block';
     document.getElementById('error').style.display = 'none';
     
@@ -22,53 +23,10 @@ async function fetchData() {
     
     if (rows.length <= 1) throw new Error('No data rows found in the sheet');
     
-    // Parse CSV with proper header handling
-    const headers = parseCSVRow(rows[0]).map(h => h.toLowerCase());
+    const headers = parseCSVRow(rows[0]).map(h => h.toLowerCase().trim());
     processData(rows.slice(1), headers);
   } catch (error) {
     handleError(error);
-  }
-}
-
-function processData(dataRows, headers) {
-  allData = [];
-  const dateIdx = headers.findIndex(h => h.includes('date'));
-  const timeIdx = headers.findIndex(h => h.includes('time'));
-  const tempIdx = headers.findIndex(h => h.includes('temp'));
-  const humIdx = headers.findIndex(h => h.includes('hum'));
-  const locIdx = headers.findIndex(h => h.includes('loc'));
-
-  for (const row of dataRows) {
-    const cols = parseCSVRow(row);
-    
-    if (cols.length >= 5) {
-      try {
-        // Parse date in DD/MM/YYYY format
-        const dateParts = cols[dateIdx].split('/');
-        const isoDate = `${dateParts[2]}-${dateParts[1].padStart(2, '0')}-${dateParts[0].padStart(2, '0')}`;
-        
-        const temp = parseFloat(cols[tempIdx]);
-        const hum = parseFloat(cols[humIdx]);
-        
-        if (!isNaN(temp) && !isNaN(hum)) {
-          allData.push({
-            date: isoDate,
-            time: cols[timeIdx],
-            temp,
-            hum,
-            loc: cols[locIdx]
-          });
-        }
-      } catch (e) {
-        console.error('Error parsing row:', e);
-      }
-    }
-  }
-  
-  if (allData.length > 0) {
-    generatePredictions();
-  } else {
-    handleError(new Error('No valid data processed'));
   }
 }
 
@@ -82,7 +40,6 @@ function parseCSVRow(row) {
     
     if (char === '"') {
       if (inQuotes && row[i + 1] === '"') {
-        // Escaped quote
         current += '"';
         i++;
       } else {
@@ -100,10 +57,51 @@ function parseCSVRow(row) {
   return result.map(item => item.trim().replace(/^"|"$/g, ''));
 }
 
+function processData(dataRows, headers) {
+  allData = [];
+  const dateIdx = headers.findIndex(h => h.includes('date'));
+  const timeIdx = headers.findIndex(h => h.includes('time'));
+  const tempIdx = headers.findIndex(h => h.includes('temp'));
+  const humIdx = headers.findIndex(h => h.includes('hum'));
+  const locIdx = headers.findIndex(h => h.includes('loc'));
+
+  for (const row of dataRows) {
+    try {
+      const cols = parseCSVRow(row);
+      
+      if (cols.length < 5) continue;
+
+      const dateStr = cols[dateIdx].trim();
+      const timeStr = cols[timeIdx].trim();
+      const temp = parseFloat(cols[tempIdx].replace(',', '.'));
+      const hum = parseFloat(cols[humIdx].replace(',', '.'));
+      const loc = cols[locIdx].trim();
+
+      if (!dateStr || isNaN(temp) || isNaN(hum)) continue;
+
+      allData.push({
+        date: dateStr,
+        time: timeStr,
+        temp,
+        hum,
+        loc
+      });
+    } catch (e) {
+      console.error('Error processing row:', e);
+    }
+  }
+  
+  if (allData.length > 0) {
+    generatePredictions();
+  } else {
+    handleError(new Error('No valid data processed. Check if your spreadsheet matches the expected format.'));
+  }
+}
+
 function handleError(error) {
   console.error('Error:', error);
   const errorEl = document.getElementById('error');
-  errorEl.textContent = `Error loading data: ${error.message}`;
+  errorEl.textContent = `Error: ${error.message}`;
   errorEl.style.display = 'block';
   document.getElementById('loading').style.display = 'none';
 }
@@ -136,40 +134,51 @@ function calculateDailyAverages(data) {
 function predictValues() {
   if (allData.length === 0) return [];
   
-  // Sort by date (YYYY-MM-DD format works natively)
   const sortedData = [...allData].sort((a, b) => 
-    new Date(a.date) - new Date(b.date)
+    new Date(a.date + ' ' + a.time) - new Date(b.date + ' ' + b.time)
   );
   
   const dailyAverages = calculateDailyAverages(sortedData);
   const dates = Object.keys(dailyAverages).sort();
   
-  if (dates.length < 2) return [];
+  if (dates.length < 2) {
+    // If only one day of data, use that day's average for all predictions
+    const avg = dailyAverages[dates[0]];
+    const predictions = [];
+    const lastDate = new Date(dates[0]);
+    
+    for (let i = 1; i <= 7; i++) {
+      const predDate = new Date(lastDate);
+      predDate.setDate(lastDate.getDate() + i);
+      
+      predictions.push({
+        date: predDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }),
+        temp: avg.temp,
+        hum: avg.hum
+      });
+    }
+    return predictions;
+  }
   
-  // Get first and last dates
-  const firstDate = dates[0];
-  const lastDate = dates[dates.length - 1];
+  // Calculate trends based on first and last day
+  const firstAvg = dailyAverages[dates[0]];
+  const lastAvg = dailyAverages[dates[dates.length - 1]];
+  const daysBetween = (new Date(dates[dates.length - 1]) - new Date(dates[0])) / (1000 * 60 * 60 * 24);
   
-  // Calculate days between first and last date
-  const daysBetween = (new Date(lastDate) - new Date(firstDate)) / (1000 * 60 * 60 * 24);
+  const tempTrend = (lastAvg.temp - firstAvg.temp) / daysBetween;
+  const humTrend = (lastAvg.hum - firstAvg.hum) / daysBetween;
   
-  // Calculate trends
-  const tempTrend = (dailyAverages[lastDate].temp - dailyAverages[firstDate].temp) / daysBetween;
-  const humTrend = (dailyAverages[lastDate].hum - dailyAverages[firstDate].hum) / daysBetween;
-  
-  const lastTemp = dailyAverages[lastDate].temp;
-  const lastHum = dailyAverages[lastDate].hum;
-  
-  // Generate predictions
   const predictions = [];
+  const lastDate = new Date(dates[dates.length - 1]);
+  
   for (let i = 1; i <= 7; i++) {
     const predDate = new Date(lastDate);
-    predDate.setDate(predDate.getDate() + i);
+    predDate.setDate(lastDate.getDate() + i);
     
     predictions.push({
       date: predDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }),
-      temp: Math.max(0, lastTemp + tempTrend * i),
-      hum: Math.min(100, Math.max(0, lastHum + humTrend * i))
+      temp: Math.max(0, lastAvg.temp + tempTrend * i),
+      hum: Math.min(100, Math.max(0, lastAvg.hum + humTrend * i))
     });
   }
   
@@ -200,7 +209,6 @@ function updateCards(predictions) {
 function drawChart(predictions) {
   const ctx = document.getElementById('chartCanvas').getContext('2d');
   
-  // Destroy existing chart if it exists
   if (chart) chart.destroy();
   
   chart = new Chart(ctx, {
@@ -266,6 +274,4 @@ function generatePredictions() {
 }
 
 // Initialize
-document.addEventListener('DOMContentLoaded', () => {
-  fetchData();
-});
+document.addEventListener('DOMContentLoaded', fetchData);
