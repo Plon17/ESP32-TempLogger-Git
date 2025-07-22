@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Climate History</title>
+  <link rel="stylesheet" href="styles/history.css?t=1721722300">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-brand">Climate Monitor</div>
+    <ul class="navbar-links">
+      <li><a href="index.html">Live Reading</a></li>
+      <li><a href="chart.html">Chart</a></li>
+      <li><a href="history.html" class="active">History</a></li>
+    </ul>
+  </nav>
+  
+  <div class="container">
+    <header>
+      <h2>Climate History</h2>
+    </header>
+    
+    <div class="filter-panel">
+      <div class="filter-group">
+        <label for="dateFilter">Filter by Date:</label>
+        <input type="date" id="dateFilter">
+      </div>
+      <div class="filter-group">
+        <label>Filter by Hour Range:</label>
+        <select id="startHour">
+          <option value="">Any</option>
+          <option value="00">00:00 - 01:00</option>
+          <option value="01">01:00 - 02:00</option>
+          <option value="02">02:00 - 03:00</option>
+          <option value="03">03:00 - 04:00</option>
+          <option value="04">04:00 - 05:00</option>
+          <option value="05">05:00 - 06:00</option>
+          <option value="06">06:00 - 07:00</option>
+          <option value="07">07:00 - 08:00</option>
+          <option value="08">08:00 - 09:00</option>
+          <option value="09">09:00 - 10:00</option>
+          <option value="10">10:00 - 11:00</option>
+          <option value="11">11:00 - 12:00</option>
+          <option value="12">12:00 - 13:00</option>
+          <option value="13">13:00 - 14:00</option>
+          <option value="14">14:00 - 15:00</option>
+          <option value="15">15:00 - 16:00</option>
+          <option value="16">16:00 - 17:00</option>
+          <option value="17">17:00 - 18:00</option>
+          <option value="18">18:00 - 19:00</option>
+          <option value="19">19:00 - 20:00</option>
+          <option value="20">20:00 - 21:00</option>
+          <option value="21">21:00 - 22:00</option>
+          <option value="22">22:00 - 23:00</option>
+          <option value="23">23:00 - 00:00</option>
+        </select>
+        <span>to</span>
+        <select id="endHour">
+          <option value="">Any</option>
+          <option value="00">00:00 - 01:00</option>
+          <option value="01">01:00 - 02:00</option>
+          <option value="02">02:00 - 03:00</option>
+          <option value="03">03:00 - 04:00</option>
+          <option value="04">04:00 - 05:00</option>
+          <option value="05">05:00 - 06:00</option>
+          <option value="06">06:00 - 07:00</option>
+          <option value="07">07:00 - 08:00</option>
+          <option value="08">08:00 - 09:00</option>
+          <option value="09">09:00 - 10:00</option>
+          <option value="10">10:00 - 11:00</option>
+          <option value="11">11:00 - 12:00</option>
+          <option value="12">12:00 - 13:00</option>
+          <option value="13">13:00 - 14:00</option>
+          <option value="14">14:00 - 15:00</option>
+          <option value="15">15:00 - 16:00</option>
+          <option value="16">16:00 - 17:00</option>
+          <option value="17">17:00 - 18:00</option>
+          <option value="18">18:00 - 19:00</option>
+          <option value="19">19:00 - 20:00</option>
+          <option value="20">20:00 - 21:00</option>
+          <option value="21">21:00 - 22:00</option>
+          <option value="22">22:00 - 23:00</option>
+          <option value="23">23:00 - 00:00</option>
+        </select>
+      </div>
+      <button id="refreshBtn">Refresh Data</button>
+      <button id="downloadBtn">Download CSV</button>
+    </div>
+    
+    <div id="loading">Loading historical data...</div>
+    <div id="error"></div>
+    
+    <div class="table-container">
+      <table id="dataTable">
+        <thead>
+          <tr>
+            <th data-sort="date">Date</th>
+            <th data-sort="time">Time</th>
+            <th data-sort="temp">Temperature (°C)</th>
+            <th data-sort="hum">Humidity (%)</th>
+            <th data-sort="loc">Location</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </div>
+  
+  <footer>
+    <p>Climate data history | Filter and download data</p>
+  </footer>
+
+  <script src="js/history.js?t=1721722300"></script>
+</body>
+</html>
