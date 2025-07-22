@@ -39,10 +39,12 @@ let lastTimestamp = null;
 let refreshIntervalId = null;
 const readingsHistory = [];
 
-// Main functions
 async function fetchData() {
   try {
-    const url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS6P6hzIdOoBMMRfgCgFF7gQ9DWvhlsmXz2hxHx3mmJuYIlanN8QjWWYT1V34UXd9PJC-2qWbTiBriZ/pub?gid=0&single=true&output=csv';
+    // Use the correct sheet ID and gid (replace '0' with actual gid if needed)
+    const sheetId = '16SUgOaXTlA_Nf_YO9q0ZpEAiRRpheRUWdpfSEy7YYCc';
+    const sheetName = 'Temp Sensor Data';
+    const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
     
     const response = await fetch(`${url}&t=${new Date().getTime()}`, {
       cache: 'no-store'
@@ -77,7 +79,7 @@ function processData(dataRows) {
     const cols = parseCSVRow(dataRows[i]);
     console.log('Parsed cols:', cols);
     
-    if (cols.length >= 4) {
+    if (cols.length >= 5) { // Expecting Date, Time, Temp, Humidity, Location
       try {
         const dateStr = cols[0].trim();
         const timeStr = cols[1].trim();
@@ -95,13 +97,13 @@ function processData(dataRows) {
             lastTimestamp = fullTimestamp;
           }
         } else {
-          console.error('Invalid temp or hum:', { temp, hum });
+          console.error('Invalid temp or hum:', { temp, hum, row: dataRows[i] });
         }
       } catch (e) {
         console.error('Error parsing row:', dataRows[i], e);
       }
     } else {
-      console.error('Invalid column count:', cols);
+      console.error('Invalid column count:', cols, 'in row:', dataRows[i]);
     }
   }
 
@@ -114,20 +116,22 @@ function updateDashboard(times, temps, hums, newDataFound) {
     document.getElementById('loading').style.display = 'none';
     document.getElementById('error').style.display = 'none';
     
-    sensorChart.data.labels = [...sensorChart.data.labels, ...times].slice(-MAX_DATA_POINTS);
-    sensorChart.data.datasets[0].data = [...sensorChart.data.datasets[0].data, ...temps].slice(-MAX_DATA_POINTS);
-    sensorChart.data.datasets[1].data = [...sensorChart.data.datasets[1].data, ...hums].slice(-MAX_DATA_POINTS);
+    // Clear existing data and add new data
+    sensorChart.data.labels = times;
+    sensorChart.data.datasets[0].data = temps;
+    sensorChart.data.datasets[1].data = hums;
     
     sensorChart.update();
     
+    // Update readings table
+    readingsHistory.length = 0; // Clear history
     times.forEach((time, i) => {
-      readingsHistory.unshift({
-        time: time.split(' ')[1],
+      readingsHistory.push({
+        time: time.split(' ')[1], // Show only time
         temperature: temps[i].toFixed(1),
         humidity: hums[i].toFixed(1)
       });
     });
-    readingsHistory.splice(MAX_DATA_POINTS);
     
     document.getElementById('readings-table').innerHTML = readingsHistory.map(reading => `
       <tr>
@@ -137,30 +141,26 @@ function updateDashboard(times, temps, hums, newDataFound) {
       </tr>
     `).join('');
     
-    updateStatus(newDataFound);
+    // Update status and last fetched time
+    const now = new Date();
+    document.getElementById('status').textContent = `Last updated: ${now.toLocaleTimeString()}`;
+    document.getElementById('lastFetched').textContent = `Last fetched: ${times[times.length - 1]}`;
+    
+    const indicator = document.getElementById('dataIndicator');
+    const dataStatus = document.getElementById('dataStatus');
+    
+    if (newDataFound) {
+      indicator.className = 'indicator on';
+      dataStatus.textContent = 'Incoming Data: On';
+    } else {
+      indicator.className = 'indicator off';
+      dataStatus.textContent = 'Incoming Data: Off';
+    }
   } else {
     showError('No valid data found in the sheet.');
   }
 }
 
-function updateStatus(newDataFound) {
-  const now = new Date();
-  document.getElementById('status').textContent = 
-    `Last updated: ${now.toLocaleTimeString()}`;
-    
-  const indicator = document.getElementById('dataIndicator');
-  const dataStatus = document.getElementById('dataStatus');
-  
-  if (newDataFound) {
-    indicator.className = 'indicator on';
-    dataStatus.textContent = 'Incoming Data: On';
-  } else {
-    indicator.className = 'indicator off';
-    dataStatus.textContent = 'Incoming Data: Off';
-  }
-}
-
-// Helper functions
 function getChartOptions() {
   return {
     responsive: true,
@@ -198,7 +198,7 @@ function getChartOptions() {
           color: '#7f8c8d',
           maxRotation: 0,
           callback: function(value) {
-            return this.getLabelForValue(value).split(' ')[1];
+            return this.getLabelForValue(value).split(' ')[1]; // Show only time
           }
         }
       },
@@ -214,12 +214,12 @@ function getChartOptions() {
         },
         grid: { color: 'rgba(0, 0, 0, 0.05)' },
         min: function(context) {
-          const min = Math.min(...context.chart.data.datasets[0].data);
-          return Math.floor(min) - 2;
+          const values = context.chart.data.datasets[0].data;
+          return values.length ? Math.floor(Math.min(...values)) - 2 : 0;
         },
         max: function(context) {
-          const max = Math.max(...context.chart.data.datasets[0].data);
-          return Math.ceil(max) + 2;
+          const values = context.chart.data.datasets[0].data;
+          return values.length ? Math.ceil(Math.max(...values)) + 2 : 40;
         }
       },
       y1: {
@@ -252,14 +252,14 @@ function parseCSVRow(row) {
     if (char === '"') {
       inQuotes = !inQuotes;
     } else if (char === ',' && !inQuotes) {
-      result.push(current.trim());
+      result.push(current);
       current = '';
     } else {
       current += char;
     }
   }
   
-  result.push(current.trim());
+  result.push(current);
   return result.filter(item => item !== '');
 }
 
@@ -276,12 +276,16 @@ function handleError(error) {
 }
 
 // Event listeners
-document.getElementById('refreshBtn').addEventListener('click', fetchData);
+document.getElementById('refreshBtn').addEventListener('click', () => {
+  document.getElementById('loading').style.display = 'block';
+  fetchData();
+});
 
 window.addEventListener('beforeunload', () => {
   if (refreshIntervalId) clearInterval(refreshIntervalId);
 });
 
 // Initialization
+document.getElementById('loading').style.display = 'block';
 fetchData();
 refreshIntervalId = setInterval(fetchData, REFRESH_INTERVAL);
