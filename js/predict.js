@@ -53,7 +53,7 @@ function processData(dataRows) {
     }
   }
   
-  document.getElementById('loading').style.display = 'none';
+  generatePredictions();
 }
 
 function parseCSVRow(row) {
@@ -202,17 +202,12 @@ function drawChart(predictions) {
   });
 }
 
-document.getElementById('predictBtn').addEventListener('click', () => {
-  document.getElementById('loading').style.display = 'block';
-  document.getElementById('error').style.display = 'none';
-  
-  fetchData().then(() => {
-    const predictions = predictValues();
-    updateCards(predictions);
-    drawChart(predictions);
-    document.getElementById('loading').style.display = 'none';
-  });
-});
+function generatePredictions() {
+  const predictions = predictValues();
+  updateCards(predictions);
+  drawChart(predictions);
+  document.getElementById('loading').style.display = 'none';
+}
 
 document.getElementById('loading').style.display = 'block';
 fetchData();
