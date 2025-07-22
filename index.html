@@ -3,40 +3,66 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Climate Sensor Dashboard</title>
-  <link rel="stylesheet" href="styles/style.css?t=1721691386">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <title>Live Climate Reading</title>
+  <link rel="stylesheet" href="styles/style.css?t=1721699000">
 </head>
 <body>
-  <div class="dashboard-container">
+  <nav class="navbar">
+    <div class="navbar-brand">Climate Monitor</div>
+    <ul class="navbar-links">
+      <li><a href="index.html" class="active">Live Reading</a></li>
+      <li><a href="chart.html">Chart</a></li>
+    </ul>
+  </nav>
+  
+  <div class="container">
     <header>
-      <h2>Climate Sensor Dashboard</h2>
+      <h2>Live Climate Reading</h2>
     </header>
     
     <div class="status-panel">
       <div>
-        <button id="refreshBtn">Refresh Data</button>
+        <button id="refreshBtn">Refresh Now</button>
       </div>
       <div class="status-indicator">
         <span id="status">Last updated: Never</span>
         <div class="indicator off" id="dataIndicator"></div>
-        <span id="dataStatus">Incoming Data: Off</span>
+        <span id="dataStatus">Data: Off</span>
       </div>
     </div>
     
-    <div id="loading">Loading climate data...</div>
+    <div id="loading">Loading latest reading...</div>
     <div id="error"></div>
-    <div id="lastFetched">Last fetched: Never</div>
     
-    <div class="chart-container">
-      <canvas id="chart" height="400"></canvas>
+    <div class="reading-container">
+      <div class="thermometer">
+        <div class="thermometer-bulb"></div>
+        <div class="thermometer-tube">
+          <div class="thermometer-fill"></div>
+        </div>
+      </div>
+      <div class="reading-data">
+        <h3>Current Conditions</h3>
+        <div class="data-point">
+          <span class="label">Temperature:</span>
+          <span id="temperature">-- °C</span>
+        </div>
+        <div class="data-point">
+          <span class="label">Humidity:</span>
+          <span id="humidity">-- %</span>
+        </div>
+        <div class="timestamp">
+          <span>Last reading: </span>
+          <span id="lastReading">Never</span>
+        </div>
+      </div>
     </div>
   </div>
   
   <footer>
-    <p>Real-time climate monitoring system | Data updates every 6 seconds</p>
+    <p>Real-time climate monitoring | Updates every 6 seconds</p>
   </footer>
 
-  <script src="js/script.js?t=1721691386"></script>
+  <script src="js/script.js?t=1721699000"></script>
 </body>
 </html>

@@ -1,49 +1,13 @@
-// Configuration
-const MAX_DATA_POINTS = 10;
-const REFRESH_INTERVAL = 6000; // Match ESP32's 6-second interval
+const REFRESH_INTERVAL = 6000;
+const SHEET_ID = '16SUgOaXTlA_Nf_YO9q0ZpEAiRRpheRUWdpfSEy7YYCc';
+const SHEET_NAME = 'Temp Sensor Data';
 
-// Chart initialization
-const chartCtx = document.getElementById('chart').getContext('2d');
-const sensorChart = new Chart(chartCtx, {
-  type: 'line',
-  data: {
-    labels: [],
-    datasets: [
-      { 
-        label: 'Temperature (°C)', 
-        data: [], 
-        borderColor: '#e74c3c',
-        backgroundColor: 'rgba(231, 76, 60, 0.1)',
-        borderWidth: 2,
-        tension: 0.2,
-        fill: true,
-        yAxisID: 'y' 
-      },
-      { 
-        label: 'Humidity (%)', 
-        data: [], 
-        borderColor: '#3498db',
-        backgroundColor: 'rgba(52, 152, 219, 0.1)',
-        borderWidth: 2,
-        tension: 0.2,
-        fill: true,
-        yAxisID: 'y1'
-      }
-    ]
-  },
-  options: getChartOptions()
-});
-
-// State management
 let lastTimestamp = null;
 let refreshIntervalId = null;
 
 async function fetchData() {
   try {
-    const sheetId = '16SUgOaXTlA_Nf_YO9q0ZpEAiRRpheRUWdpfSEy7YYCc';
-    const sheetName = 'Temp Sensor Data';
-    const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
-    
+    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_NAME)}`;
     const response = await fetch(`${url}&t=${new Date().getTime()}`, {
       cache: 'no-store',
       headers: { 'Accept': 'text/csv' }
@@ -58,161 +22,56 @@ async function fetchData() {
     
     if (rows.length <= 1) throw new Error('No data rows found in the sheet');
     
-    processData(rows.slice(1));
+    processData(rows[rows.length - 1]);
   } catch (error) {
     handleError(error);
   }
 }
 
-function processData(dataRows) {
-  const newTimes = [];
-  const newTemps = [];
-  const newHums = [];
-  let newDataFound = false;
-
-  console.log('Processing rows:', dataRows);
-
-  const startIdx = Math.max(0, dataRows.length - MAX_DATA_POINTS);
+function processData(row) {
+  const cols = parseCSVRow(row);
+  console.log('Parsed cols:', cols);
   
-  for (let i = dataRows.length - 1; i >= startIdx; i--) {
-    const cols = parseCSVRow(dataRows[i]);
-    console.log('Parsed cols:', cols);
-    
-    if (cols.length >= 5) {
-      try {
-        const dateStr = cols[0].replace(/^"|"$/g, '').trim();
-        const timeStr = cols[1].replace(/^"|"$/g, '').trim();
-        const fullTimestamp = `${dateStr} ${timeStr}`;
-        const temp = parseFloat(cols[2].replace(/^"|"$/g, '').trim());
-        const hum = parseFloat(cols[3].replace(/^"|"$/g, '').trim());
-        
-        if (!isNaN(temp) && !isNaN(hum) && dateStr && timeStr) {
-          newTimes.push(fullTimestamp);
-          newTemps.push(temp);
-          newHums.push(hum);
-          
-          if (!lastTimestamp || new Date(fullTimestamp) > new Date(lastTimestamp)) {
-            newDataFound = true;
-            lastTimestamp = fullTimestamp;
-          }
-        } else {
-          console.error('Invalid data:', { dateStr, timeStr, temp, hum, row: dataRows[i] });
-        }
-      } catch (e) {
-        console.error('Error parsing row:', dataRows[i], e);
+  if (cols.length >= 5) {
+    try {
+      const dateStr = cols[0].replace(/^"|"$/g, '').trim();
+      const timeStr = cols[1].replace(/^"|"$/g, '').trim();
+      const fullTimestamp = `${dateStr} ${timeStr}`;
+      const temp = parseFloat(cols[2].replace(/^"|"$/g, '').trim());
+      const hum = parseFloat(cols[3].replace(/^"|"$/g, '').trim());
+      
+      if (!isNaN(temp) && !isNaN(hum) && dateStr && timeStr) {
+        const newDataFound = !lastTimestamp || new Date(fullTimestamp) > new Date(lastTimestamp);
+        lastTimestamp = fullTimestamp;
+        updateDisplay(fullTimestamp, temp, hum, newDataFound);
+      } else {
+        console.error('Invalid data:', { dateStr, timeStr, temp, hum, row });
+        handleError(new Error('Invalid data in latest row'));
       }
-    } else {
-      console.error('Invalid column count:', cols, 'in row:', dataRows[i]);
+    } catch (e) {
+      console.error('Error parsing row:', row, e);
+      handleError(e);
     }
-  }
-
-  console.log('Processed data:', { newTimes, newTemps, newHums, newDataFound });
-  if (newTimes.length > 0) {
-    updateDashboard(newTimes.reverse(), newTemps.reverse(), newHums.reverse(), newDataFound);
   } else {
-    handleError(new Error('No valid data rows found'));
+    console.error('Invalid column count:', cols, 'in row:', row);
+    handleError(new Error('Invalid column count in latest row'));
   }
 }
 
-function updateDashboard(times, temps, hums, newDataFound) {
+function updateDisplay(timestamp, temp, hum, newDataFound) {
   document.getElementById('loading').style.display = 'none';
   document.getElementById('error').style.display = 'none';
   
-  // Replace chart data
-  sensorChart.data.labels = times;
-  sensorChart.data.datasets[0].data = temps;
-  sensorChart.data.datasets[1].data = hums;
-  sensorChart.update();
+  document.getElementById('temperature').textContent = `${temp.toFixed(1)} °C`;
+  document.getElementById('humidity').textContent = `${hum.toFixed(1)} %`;
+  document.getElementById('lastReading').textContent = timestamp;
   
-  // Update status
   const now = new Date();
   document.getElementById('status').textContent = `Last updated: ${now.toLocaleTimeString()}`;
-  document.getElementById('lastFetched').textContent = `Last fetched: ${times[times.length - 1] || 'Never'}`;
-  
   const indicator = document.getElementById('dataIndicator');
   const dataStatus = document.getElementById('dataStatus');
   indicator.className = newDataFound ? 'indicator on' : 'indicator off';
-  dataStatus.textContent = newDataFound ? 'Incoming Data: On' : 'Incoming Data: Off';
-}
-
-function getChartOptions() {
-  return {
-    responsive: true,
-    maintainAspectRatio: false,
-    interaction: { mode: 'index', intersect: false },
-    plugins: {
-      legend: {
-        position: 'top',
-        labels: { boxWidth: 12, padding: 20, font: { weight: 'bold' } }
-      },
-      tooltip: {
-        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-        titleFont: { size: 14, weight: 'bold' },
-        bodyFont: { size: 12 },
-        padding: 12,
-        usePointStyle: true,
-        callbacks: {
-          label: function(context) {
-            let label = context.dataset.label || '';
-            if (label) label += ': ';
-            if (context.parsed.y !== null) {
-              label += context.parsed.y.toFixed(1);
-              label += context.dataset.label.includes('Temperature') ? '°C' : '%';
-            }
-            return label;
-          }
-        }
-      }
-    },
-    animation: { duration: 800 },
-    scales: {
-      x: {
-        grid: { display: false },
-        ticks: {
-          color: '#7f8c8d',
-          maxRotation: 0,
-          callback: function(value) {
-            return this.getLabelForValue(value).split(' ')[1];
-          }
-        }
-      },
-      y: {
-        type: 'linear',
-        display: true,
-        position: 'left',
-        title: {
-          display: true,
-          text: 'Temperature (°C)',
-          color: '#e74c3c',
-          font: { weight: 'bold' }
-        },
-        grid: { color: 'rgba(0, 0, 0, 0.05)' },
-        min: function(context) {
-          const values = context.chart.data.datasets[0].data;
-          return values.length ? Math.floor(Math.min(...values)) - 2 : 0;
-        },
-        max: function(context) {
-          const values = context.chart.data.datasets[0].data;
-          return values.length ? Math.ceil(Math.max(...values)) + 2 : 40;
-        }
-      },
-      y1: {
-        type: 'linear',
-        display: true,
-        position: 'right',
-        title: {
-          display: true,
-          text: 'Humidity (%)',
-          color: '#3498db',
-          font: { weight: 'bold' }
-        },
-        grid: { drawOnChartArea: false },
-        min: 0,
-        max: 100,
-        ticks: { callback: function(value) { return value + '%'; } }
-      }
-    }
-  };
+  dataStatus.textContent = newDataFound ? 'Data: On' : 'Data: Off';
 }
 
 function parseCSVRow(row) {
