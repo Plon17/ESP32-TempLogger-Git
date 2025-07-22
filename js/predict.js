@@ -142,7 +142,6 @@ function predictValues() {
   const dates = Object.keys(dailyAverages).sort();
   
   if (dates.length < 2) {
-    // If only one day of data, use that day's average for all predictions
     const avg = dailyAverages[dates[0]];
     const predictions = [];
     const lastDate = new Date(dates[0]);
@@ -160,7 +159,6 @@ function predictValues() {
     return predictions;
   }
   
-  // Calculate trends based on first and last day
   const firstAvg = dailyAverages[dates[0]];
   const lastAvg = dailyAverages[dates[dates.length - 1]];
   const daysBetween = (new Date(dates[dates.length - 1]) - new Date(dates[0])) / (1000 * 60 * 60 * 24);
@@ -234,6 +232,7 @@ function drawChart(predictions) {
     },
     options: {
       responsive: true,
+      maintainAspectRatio: false,
       interaction: {
         mode: 'index',
         intersect: false,
