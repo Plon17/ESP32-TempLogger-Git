@@ -13,7 +13,7 @@
       <li><a href="index.html">Live Reading</a></li>
       <li><a href="chart.html">Chart</a></li>
       <li><a href="history.html">History</a></li>
-      <li><a href="predict.html" class="active">Predictins</a></li>
+      <li><a href="predict.html" class="active">Predict</a></li>
     </ul>
   </nav>
   
@@ -23,36 +23,18 @@
     </header>
     
     <div class="filter-panel">
-      <div class="filter-group">
-        <label for="startDate">Start Date:</label>
-        <input type="date" id="startDate" value="2025-07-15">
-      </div>
-      <div class="filter-group">
-        <label for="endDate">End Date:</label>
-        <input type="date" id="endDate" value="2025-07-21">
-      </div>
       <button id="predictBtn">Generate Prediction</button>
     </div>
     
     <div id="loading">Loading historical data...</div>
     <div id="error"></div>
     
-    <div class="prediction-container">
-      <table id="predictionTable">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Predicted Temp (°C)</th>
-            <th>Predicted Humidity (%)</th>
-          </tr>
-        </thead>
-        <tbody id="tableBody"></tbody>
-      </table>
-      <div id="chartCanvas" class="chart-canvas"></div>
-    </div>
+    <div class="prediction-container" id="predictionCards"></div>
+    <div id="chartCanvas" class="chart-canvas"></div>
   </div>
   
   <footer>
+    <p>Climate prediction based on historical data</p>
   </footer>
 
   <script src="js/predict.js?t=1721664060"></script>

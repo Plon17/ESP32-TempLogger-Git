@@ -102,13 +102,15 @@ function calculateDailyAverages(data) {
   return averages;
 }
 
-function predictValues(startDate, endDate, daysToPredict) {
-  const filteredData = allData.filter(row => {
-    const rowDate = new Date(row.date);
-    return rowDate >= new Date(startDate) && rowDate <= new Date(endDate);
-  });
+function predictValues() {
+  if (allData.length === 0) {
+    alert('No data available for prediction');
+    return [];
+  }
   
-  const dailyAverages = calculateDailyAverages(filteredData);
+  allData.sort((a, b) => new Date(b.date + ' ' + b.time) - new Date(a.date + ' ' + a.time));
+  const latestDate = new Date(allData[0].date + ' ' + allData[0].time);
+  const dailyAverages = calculateDailyAverages(allData);
   const dates = Object.keys(dailyAverages).sort();
   
   if (dates.length < 2) {
@@ -120,41 +122,41 @@ function predictValues(startDate, endDate, daysToPredict) {
   const humTrend = (dailyAverages[dates[dates.length - 1]].hum - dailyAverages[dates[0]].hum) / (dates.length - 1);
   const lastTemp = dailyAverages[dates[dates.length - 1]].temp;
   const lastHum = dailyAverages[dates[dates.length - 1]].hum;
-  const lastDate = new Date(dates[dates.length - 1]);
   
   const predictions = [];
-  for (let i = 1; i <= daysToPredict; i++) {
-    const predDate = new Date(lastDate);
-    predDate.setDate(lastDate.getDate() + i);
+  for (let i = 1; i <= 7; i++) {
+    const predDate = new Date(latestDate);
+    predDate.setDate(latestDate.getDate() + i);
     const predTemp = lastTemp + tempTrend * i;
     const predHum = lastHum + humTrend * i;
     predictions.push({
       date: predDate.toISOString().split('T')[0],
-      temp: Math.max(0, predTemp), // Avoid negative values
-      hum: Math.min(100, Math.max(0, predHum)) // Keep between 0-100%
+      temp: Math.max(0, predTemp),
+      hum: Math.min(100, Math.max(0, predHum))
     });
   }
   
   return predictions;
 }
 
-function updateTable(predictions) {
-  const tableBody = document.getElementById('tableBody');
-  tableBody.innerHTML = '';
+function updateCards(predictions) {
+  const container = document.getElementById('predictionCards');
+  container.innerHTML = '';
   
   if (predictions.length === 0) {
-    tableBody.innerHTML = '<tr><td colspan="3">No predictions available</td></tr>';
+    container.innerHTML = '<p>No predictions available</p>';
     return;
   }
   
-  predictions.forEach(row => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${row.date}</td>
-      <td>${row.temp.toFixed(1)}</td>
-      <td>${row.hum.toFixed(1)}</td>
+  predictions.forEach(pred => {
+    const card = document.createElement('div');
+    card.className = 'prediction-card';
+    card.innerHTML = `
+      <h3>${pred.date}</h3>
+      <p>Temp: ${pred.temp.toFixed(1)}°C</p>
+      <p>Hum: ${pred.hum.toFixed(1)}%</p>
     `;
-    tableBody.appendChild(tr);
+    container.appendChild(card);
   });
 }
 
@@ -204,24 +206,9 @@ document.getElementById('predictBtn').addEventListener('click', () => {
   document.getElementById('loading').style.display = 'block';
   document.getElementById('error').style.display = 'none';
   
-  const startDate = document.getElementById('startDate').value;
-  const endDate = document.getElementById('endDate').value;
-  
-  if (!startDate || !endDate) {
-    alert('Please select both start and end dates');
-    document.getElementById('loading').style.display = 'none';
-    return;
-  }
-  
-  if (new Date(endDate) < new Date(startDate)) {
-    alert('End date must be after start date');
-    document.getElementById('loading').style.display = 'none';
-    return;
-  }
-  
   fetchData().then(() => {
-    const predictions = predictValues(startDate, endDate, 7);
-    updateTable(predictions);
+    const predictions = predictValues();
+    updateCards(predictions);
     drawChart(predictions);
     document.getElementById('loading').style.display = 'none';
   });
