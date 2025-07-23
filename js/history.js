@@ -56,6 +56,8 @@ function processData(dataRows) {
     }
   }
   
+  allData.reverse();
+  
   currentPage = 1;
   filteredData = allData;
   if (allData.length > 0) {

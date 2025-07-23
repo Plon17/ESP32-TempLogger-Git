@@ -272,5 +272,4 @@ function generatePredictions() {
   document.getElementById('loading').style.display = 'none';
 }
 
-// Initialize
 document.addEventListener('DOMContentLoaded', fetchData);
